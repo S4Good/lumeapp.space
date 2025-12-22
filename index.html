@@ -4,7 +4,13 @@
   <meta charset="UTF-8" />
   <title>Lume Space</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Lume Space – a quiet digital space, evolving into a physical one." />
+  <meta name="description" content="Market structure intelligence. Weekly edge reports, institutional risk maps, and invalidation levels.">
+  <meta property="og:title" content="Lume Space — Market Structure Intelligence">
+  <meta property="og:description" content="Institutional Grade Clarity. Weekly Edge Reports & Risk Maps.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lume Space">
+  <meta name="twitter:description" content="Decrypting Market Structure.">
   <link rel="icon" type="image/png" href="favicon.png">
 
   <style>
@@ -55,7 +61,7 @@
 
     @keyframes dotPulse { 0%{transform:scale(1);opacity:.85}50%{transform:scale(1.35);opacity:1}100%{transform:scale(1);opacity:.85} }
 
-    .hero-center { flex:1; display:flex; align-items:center; justify-content:center; text-align:center; position:relative; z-index:1; opacity:0; transform:translateY(12px); animation:heroFadeIn 1.6s ease-out forwards }
+    .hero { flex:1; display:flex; align-items:center; justify-content:space-between; max-width:1200px; margin:0 auto; width:100%; position:relative; z-index:1; opacity:0; transform:translateY(12px); animation:heroFadeIn 1.6s ease-out forwards; gap:3rem; }\n    .hero-left { text-align:center; flex:1; }\n    .hero-right { flex:1; display:flex; align-items:center; justify-content:center; }\n    @media (max-width: 900px) { .hero { flex-direction:column; justify-content:center; gap:2rem; } .hero-left { text-align:center; } .hero-right { width:100%; } }
 
     /* removed glowing orb to keep title crisp */
 
@@ -82,7 +88,7 @@
     }
 
     footer { font-size:0.8rem; color:var(--muted); opacity:0.9 }
-    .footer-links a { margin-left:1rem; text-decoration:none; color:inherit }
+    .footer-links a { margin-left:1rem; padding: 0.5rem; text-decoration:none; color:inherit }
     .footer-links a:hover { text-decoration:underline }
 
     .cookie-banner { position:fixed; bottom:1rem; right:1rem; max-width:420px; padding:1rem 1.3rem; border-radius:16px; background:rgba(24,26,22,0.95); color:#d0c7b3; font-size:0.85rem; border:1px solid rgba(255,255,255,0.12); box-shadow:0 18px 40px rgba(0,0,0,0.6); line-height:1.45; z-index:50 }
@@ -101,7 +107,7 @@
     .highlight { color:var(--neon-blue); font-weight:700 }
 
     .btn-neon { display:inline-block; margin-top:1.5rem; padding:1rem 2rem; background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); text-shadow:0 0 5px var(--neon-blue); font-weight:700; text-decoration:none; letter-spacing:0.1em; box-shadow:0 0 15px var(--neon-blue); cursor:pointer; transition:all .25s ease }
-    .btn-neon:hover { background:var(--neon-blue); color:#000; box-shadow:0 0 25px #fff }
+    .btn-neon:hover { background:rgba(0, 243, 255, 0.1); color:var(--neon-blue); box-shadow:0 0 25px rgba(0, 243, 255, 0.8) }
 
     .cursor { display:inline-block; animation:blink 1s step-end infinite }
     @keyframes blink { 0%, 100% { opacity:1 } 50% { opacity:0 } }
@@ -119,9 +125,18 @@
 
     .manifest-list { list-style: none; padding: 0; margin: 0; }
 
-    .manifest-list li { font-size: 0.75rem; color: var(--fg); margin-bottom: 0.4rem; letter-spacing: 0.05em; opacity: 0.9; }
+    .manifest-list li { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.75rem; color: var(--fg); margin-bottom: 0.4rem; letter-spacing: 0.05em; opacity: 0.9; }
 
-    .cmd { color: var(--neon-blue); margin-right: 0.5rem; font-weight: bold; }
+    .cmd { color: var(--neon-blue); margin-right: 0; font-weight: bold; }
+
+    .manifest-meta { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.12em; margin-top: 0.8rem; opacity: 0.8; }
+
+    .footer-links a { margin-left:1rem; padding: 0.5rem; text-decoration:none; color:inherit }
+    .footer-links a:hover { text-decoration:underline }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 
@@ -141,32 +156,36 @@
     </div>
   </header>
 
-  <div class="hero-center">
-    <h1 class="hero-title">Lume Space</h1>
+  <main class="hero">
+    <div class="hero-left">
+      <h1 class="hero-title">Lume Space</h1>
+    </div>
+    <div class="hero-right">
+      <div class="terminal-card">
+        <div class="terminal-header">
+          <span class="status-dot"></span> SYSTEM STATUS: ONLINE (BETA)
+        </div>
+        <p class="terminal-text">
+          Institutional Grade Clarity in a Chaos Market.<br>
+          <span class="highlight">> Decrypting Market Structure.</span>
+        </p>
+        
+        <a href="https://whop.com/lume-space" class="btn-neon">
+          ACCESS THE <span style="letter-spacing: 3px;">EDGE™</span><span class="cursor">_</span>
+        </a>
 
-    <div class="terminal-card">
-      <div class="terminal-header">
-        <span class="status-dot"></span> SYSTEM STATUS: ONLINE
-      </div>
-      <p class="terminal-text">
-        Institutional Grade Clarity in a Chaos Market.<br>
-        <span class="highlight">> Decrypting Market Structure.</span>
-      </p>
-      
-      <a href="https://whop.com/lume-space" class="btn-neon">
-        ACCESS THE <span style="letter-spacing: 3px;">EDGE™</span><span class="cursor">_</span>
-      </a>
-
-      <div class="system-manifest">
+        <div class="system-manifest">
         <p class="manifest-header">SYSTEM_OUTPUTS:</p>
         <ul class="manifest-list">
           <li><span class="cmd">&gt;</span> WEEKLY EDGE REPORTS [PDF]</li>
           <li><span class="cmd">&gt;</span> INSTITUTIONAL RISK MAPS</li>
           <li><span class="cmd">&gt;</span> FRACTAL INVALIDATION LEVELS</li>
         </ul>
+          <p class="manifest-meta">DELIVERY: WEEKLY • ACCESS: MEMBERS ONLY</p>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
 
   <footer>
     <div>© <span id="year"></span></div>
