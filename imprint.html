@@ -40,28 +40,32 @@
       <div class="brand-name">Lume Space</div>
     </div>
   </a>
+  <style>
+    :root {
+      --bg-black: #0a0b0a;
+      --fg: #e0e6ed;
+      --muted: #889096;
+      --neon-blue: #00f3ff;
+      --neon-green: #39ff14;
+      --grid-line: rgba(0,243,255,0.2);
+    }
 
-  <div class="tag">Under development</div>
+    * { box-sizing: border-box }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg-black); color: var(--fg); min-height:100vh; padding:2rem; background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size:50px 50px; animation: gridDrift 20s linear infinite }
+    @keyframes gridDrift { 0%{background-position:0 0}100%{background-position:-50px 50px} }
 
-    </header>
-   <main>
-  <h1>Imprint</h1>
+    header { display:flex; align-items:center; gap:0.8rem }
+    .brand-logo { width:36px; height:36px; filter: invert(1) brightness(200%) drop-shadow(0 0 5px #00f3ff) }
 
-  <p><strong>Lume Space</strong><br>
-  Owner: Shahrukh Khan<br>
-  Dresden<br>
-  Germany</p>
+    .content { max-width:850px; margin:2rem auto; background: rgba(20,22,20,0.78); padding:2rem; border-radius:8px; border:1px solid rgba(255,255,255,0.04) }
+    h1 { font-size:1.8rem; margin-bottom:1rem }
+    p { color:#cfcfcf; line-height:1.6 }
 
-  <p><strong>Business registration:</strong><br>
-  Will be registered in accordance with § 14 GewO with the responsible authority in Germany.</p>
+    .tag-pill { padding:0.3rem 0.8rem; border-radius:999px; background:transparent; color:var(--neon-blue); letter-spacing:0.14em; font-size:0.75rem; text-transform:uppercase; display:inline-flex; align-items:center; gap:0.4rem; border:1px solid #00f3ff; box-shadow:0 0 5px #00f3ff }
 
-  <p><strong>Responsible for content (according to § 55 Abs. 2 RStV):</strong><br>
-  Shahrukh Khan</p>
-
-  <h2>Disclaimer</h2>
-  <p><strong>Liability for content:</strong><br>
-  The contents of this website have been created with great care. However, no guarantee is given for the accuracy, completeness or timeliness of the content.</p>
-
+    .btn-neon { padding:0.6rem 1rem; border:1px solid var(--neon-blue); background:transparent; color:var(--neon-blue); box-shadow:0 0 10px var(--neon-blue); text-decoration:none }
+    .btn-neon:hover { background:var(--neon-blue); color:#000 }
+  </style>
   <p><strong>Liability for links:</strong><br>
   This website may contain links to external third-party websites. We have no influence on their content.  Therefore, we cannot assume any liability for external content. The respective provider or operator is always responsible for the linked pages.</p>
   <h2>Copyright</h2>
