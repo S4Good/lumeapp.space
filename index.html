@@ -105,6 +105,23 @@
 
     .cursor { display:inline-block; animation:blink 1s step-end infinite }
     @keyframes blink { 0%, 100% { opacity:1 } 50% { opacity:0 } }
+    
+    /* System manifest readout */
+    .system-manifest {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed rgba(0, 243, 255, 0.2);
+      text-align: left;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .manifest-header { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.15em; margin-bottom: 0.8rem; opacity: 0.7; }
+
+    .manifest-list { list-style: none; padding: 0; margin: 0; }
+
+    .manifest-list li { font-size: 0.75rem; color: var(--fg); margin-bottom: 0.4rem; letter-spacing: 0.05em; opacity: 0.9; }
+
+    .cmd { color: var(--neon-blue); margin-right: 0.5rem; font-weight: bold; }
   </style>
 </head>
 
@@ -139,6 +156,15 @@
       <a href="https://whop.com/lume-space" class="btn-neon">
         ACCESS THE <span style="letter-spacing: 3px;">EDGE™</span><span class="cursor">_</span>
       </a>
+
+      <div class="system-manifest">
+        <p class="manifest-header">SYSTEM_OUTPUTS:</p>
+        <ul class="manifest-list">
+          <li><span class="cmd">&gt;</span> WEEKLY EDGE REPORTS [PDF]</li>
+          <li><span class="cmd">&gt;</span> INSTITUTIONAL RISK MAPS</li>
+          <li><span class="cmd">&gt;</span> FRACTAL INVALIDATION LEVELS</li>
+        </ul>
+      </div>
     </div>
   </div>
 
