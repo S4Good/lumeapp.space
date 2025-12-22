@@ -8,23 +8,23 @@
   <link rel="icon" type="image/png" href="favicon.png">
 
   <style>
-    :root { --bg-cream: #f3e8d3; --bg-charcoal: #222422; --bg-olive-deep: #4e5a38; --accent: #d7c28c; --grid-line: rgba(78, 90, 56, 0.08); --fg: #1d2417; --muted: #6b665c; --border: rgba(255,255,255,0.16); --card-bg: rgba(243, 232, 211, 0.6); }
+    :root { --bg-black: #0a0b0a; --bg-charcoal: #141614; --neon-blue: #00f3ff; --neon-green: #29ffbf; --grid-line: rgba(0, 243, 255, 0.15); --fg: #e0e6ed; --muted: #889096; --border: rgba(0, 243, 255, 0.3); --card-bg: rgba(20, 22, 20, 0.85); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; color: var(--fg); line-height: 1.6; background-color: var(--bg-cream); background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 40px 40px; background-attachment: fixed; animation: gridDrift 120s linear infinite; min-height:100vh; display:flex; justify-content:center; }
-    @keyframes gridDrift { 0% { background-position: 0 0; } 100% { background-position: -40px 40px; } }
+    body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-black); color: var(--fg); line-height: 1.6; background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 50px 50px; background-attachment: fixed; animation: gridDrift 120s linear infinite; min-height:100vh; display:flex; justify-content:center; }
+    @keyframes gridDrift { 0% { background-position: 0 0; } 100% { background-position: -50px 50px; } }
     .shell { width:100%; max-width:960px; padding:1.8rem 1.6rem 2.4rem; margin-inline:auto; display:flex; flex-direction:column; gap:1.8rem; }
     header { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .brand { display:flex; align-items:center; gap:0.65rem; }
-    .brand-mark { width:40px; height:40px; border-radius:14px; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 12px 28px rgba(0,0,0,0.35); background:transparent; }
+    .brand-mark { width:40px; height:40px; border-radius:14px; display:flex; align-items:center; justify-content:center; overflow:hidden; box-shadow:0 12px 28px rgba(0, 243, 255, 0.2); background:transparent; }
     .brand-logo { max-width:100%; max-height:100%; display:block; }
-    .brand-name { letter-spacing:0.16em; text-transform:uppercase; font-size:0.82rem; opacity:0.9; }
-    .tag { font-size:0.78rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); opacity:0.8; white-space:nowrap; }
-    main { border-radius:20px; border:1px solid var(--border); background:var(--card-bg); padding:1.6rem 1.8rem 2.0rem; line-height:1.7; color:var(--muted); }
-    h1 { font-size:1.5rem; margin-bottom:1rem; color:var(--fg); }
-    h2 { font-size:1.1rem; margin-top:1.4rem; margin-bottom:0.4rem; color:var(--fg); }
+    .brand-name { letter-spacing:0.16em; text-transform:uppercase; font-size:0.82rem; opacity:0.9; color: var(--neon-blue); }
+    .tag { font-size:0.78rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--neon-green); opacity:0.9; white-space:nowrap; }
+    main { border-radius:4px; border:1px solid var(--neon-blue); background:var(--card-bg); padding:1.6rem 1.8rem 2.0rem; line-height:1.7; color:var(--fg); box-shadow: 0 0 15px rgba(0, 243, 255, 0.1); }
+    h1 { font-size:1.5rem; margin-bottom:1rem; color:var(--neon-blue); }
+    h2 { font-size:1.1rem; margin-top:1.4rem; margin-bottom:0.4rem; color:var(--neon-green); }
     ul { margin-left:1.1rem; margin-bottom:0.8rem; }
     p { margin-bottom:0.6rem; }
-    a { color:var(--accent); text-decoration:none; }
+    a { color:var(--neon-blue); text-decoration:none; }
     a:hover { text-decoration:underline; }
     footer { font-size:0.78rem; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.8rem; opacity:0.9; }
     .footer-links { display:flex; gap:0.9rem; flex-wrap:wrap; }

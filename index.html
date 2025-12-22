@@ -9,14 +9,14 @@
 
   <style>
     :root {
-      --bg-cream: #f3e8d3;
-      --bg-charcoal: #222422;
-      --bg-olive-deep: #4e5a38;
-      --accent: #d7c28c;
-      --grid-line: rgba(78, 90, 56, 0.08);
-      --fg: #1d2417;
-      --muted: #6b665c;
-      --border: rgba(255, 255, 255, 0.16);
+      --bg-black: #0a0b0a;
+      --bg-charcoal: #141614;
+      --neon-blue: #00f3ff;
+      --neon-green: #29ffbf;
+      --grid-line: rgba(0, 243, 255, 0.15);
+      --fg: #e0e6ed;
+      --muted: #889096;
+      --border: rgba(0, 243, 255, 0.3);
     }
 
     * {
@@ -27,11 +27,11 @@
 
     body {
       font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-black);
       color: var(--fg);
       line-height: 1.6;
-      background-color: var(--bg-cream);
       background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-      background-size: 40px 40px;
+      background-size: 50px 50px;
       background-attachment: fixed;
       animation: gridDrift 120s linear infinite;
       min-height: 100vh;
@@ -225,6 +225,70 @@
       50% { transform: translate(8px, -4px) scale(1.05); }
       100% { transform: translate(2px, 10px) scale(0.98); }
     }
+
+    .status-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--neon-green);
+      box-shadow: 0 0 8px var(--neon-green);
+      margin-right: 0.5rem;
+      animation: dotPulse 1.5s ease-in-out infinite;
+    }
+
+    .terminal-card {
+      margin-top: 2rem;
+      background: rgba(20, 22, 20, 0.85);
+      border: 1px solid var(--neon-blue);
+      padding: 2rem;
+      border-radius: 4px;
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+      max-width: 500px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .terminal-header {
+      color: var(--neon-green);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+    }
+
+    .terminal-text {
+      color: var(--fg);
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .highlight {
+      color: var(--neon-blue);
+      font-weight: bold;
+    }
+
+    .btn-neon {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 1rem 2rem;
+      background: var(--neon-blue);
+      color: #000;
+      font-weight: bold;
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      box-shadow: 0 0 15px var(--neon-blue);
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn-neon:hover {
+      background: #fff;
+      color: #000;
+      box-shadow: 0 0 25px #fff;
+    }
   </style>
 </head>
 
@@ -246,6 +310,20 @@
 
   <div class="hero-center">
     <h1 class="hero-title">Lume Space</h1>
+
+    <div class="terminal-card">
+      <div class="terminal-header">
+        <span class="status-dot"></span> SYSTEM STATUS: ONLINE
+      </div>
+      <p class="terminal-text">
+        Institutional Grade Clarity in a Chaos Market.<br>
+        <span class="highlight">> Decrypting Market Structure.</span>
+      </p>
+      
+      <a href="https://whop.com/lume-edge-trading" class="btn-neon">
+        ACCESS THE EDGE_
+      </a>
+    </div>
   </div>
 
   <footer>
