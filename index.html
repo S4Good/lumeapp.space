@@ -1,24 +1,302 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Lume Space</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0">
-  <script>
-    (function () {
-      const lang = navigator.language || navigator.userLanguage || "en";
-      if (lang.toLowerCase().startsWith("de")) {
-        window.location.replace("de/index.html");
-      } else {
-        window.location.replace("en/index.html");
-      }
-    })();
-  </script>
-  <noscript>
-    <meta http-equiv="refresh" content="0; url=/en/index.html">
-  </noscript>
+  <meta charset="UTF-8" />
+  <title>Lume Space | The Edge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Lume Space – Institutional Grade Clarity in a Chaos Market." />
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <style>
+    :root {
+      --bg-cream: #f3e8d3;
+      --bg-cream-deep: #e6d5b8;
+      --bg-olive-soft: #7a8453;
+      --bg-olive-deep: #4e5a38;
+      --bg-charcoal: #222422;
+
+      --fg: #1d2417;
+      --muted: #6b665c;
+      --accent: #d7c28c;
+      --border: rgba(29, 36, 23, 0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2rem;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(255,255,255,0.95) 0, transparent 55%),
+        radial-gradient(circle at 15% 70%, rgba(122,132,83,0.15) 0, transparent 55%),
+        linear-gradient(185deg, var(--bg-cream) 0%, var(--bg-cream-deep) 100%);
+      background-attachment: fixed;
+      color: var(--fg);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    header, footer {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: inherit;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg-charcoal);
+    }
+    .brand-logo { width: 100%; height: 100%; object-fit: cover; }
+
+    .tag-pill {
+      padding: 0.3rem 0.8rem;
+      border-radius: 999px;
+      background: rgba(29, 36, 23, 0.05);
+      color: var(--fg);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid var(--border);
+    }
+
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--bg-olive-deep);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+
+    /* Main Content */
+    .hero-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      max-width: 650px;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+      animation: fadeUp 1.2s ease-out;
+    }
+
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--bg-charcoal);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin-bottom: 2.5rem;
+      font-weight: 400;
+      max-width: 90%;
+    }
+
+    /* The "Offer" Box */
+    .offer-box {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.4);
+      padding: 2rem;
+      border-radius: 20px;
+      width: 100%;
+      text-align: left;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+
+    .offer-header {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--bg-olive-deep);
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .feature-list {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+
+    .feature-list li {
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.95rem;
+      color: var(--bg-charcoal);
+    }
+
+    .feature-list li::before {
+      content: "→";
+      color: var(--bg-olive-soft);
+    }
+
+    /* Primary Button */
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      text-align: center;
+      background: var(--bg-charcoal);
+      color: var(--bg-cream);
+      text-decoration: none;
+      border-radius: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+      background: #000;
+    }
+
+    /* Footer */
+    footer {
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+    }
+
+    .footer-links a {
+      margin-left: 1.2rem;
+      text-decoration: none;
+      color: inherit;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--bg-charcoal); }
+
+    /* Cookie Banner (Keep original logic) */
+    .cookie-banner {
+      position: fixed; bottom: 1rem; right: 1rem;
+      max-width: 400px; padding: 1.5rem;
+      border-radius: 16px; background: var(--bg-charcoal);
+      color: var(--bg-cream); font-size: 0.85rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      z-index: 50; display: none;
+    }
+    .cookie-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .btn-cookie {
+      padding: 0.4rem 0.8rem; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: transparent; color: inherit; cursor: pointer;
+    }
+    .btn-cookie-primary { background: var(--bg-olive-soft); border-color: transparent; color: #fff; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
 </head>
+
 <body>
+
+  <header>
+    <a href="index.html" class="brand">
+      <div class="brand-mark">
+        <img src="assets/lume-space-logo.png" class="brand-logo" alt="Lume">
+      </div>
+      <span>LUME SYSTEM</span>
+    </a>
+
+    <div class="tag-pill">
+      <span class="tag-dot"></span>
+      <span>Waitlist Open</span>
+    </div>
+  </header>
+
+  <div class="hero-container">
+    <h1 class="hero-title">Institutional Grade Clarity in a Chaos Market.</h1>
+    <p class="hero-subtitle">
+      The LUME System decodes market structure to separate noise from signal. 
+      We don't guess. We analyze.
+    </p>
+
+    <div class="offer-box">
+      <div class="offer-header">Access the Edge</div>
+      <ul class="feature-list">
+        <li><strong>Weekly Market Structure Reports:</strong> Deep-dive analysis on high-cap assets.</li>
+        <li><strong>Invalidation Points:</strong> Know exactly when the trend breaks.</li>
+        <li><strong>Zero Noise:</strong> No news, no hype. Just price action logic.</li>
+      </ul>
+
+      <a href="https://whop.com/lume-space/lume-edge-access" class="btn-primary" target="_blank">Join the Waitlist</a>
+    </div>
+  </div>
+
+  <footer>
+    <div>© <span id="year"></span> Lume Space System</div>
+    <div class="footer-links">
+      <a href="imprint.html">Imprint</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="cookies.html">Cookies</a>
+    </div>
+  </footer>
+
+  <div class="cookie-banner" id="cookie-banner">
+    <p>We use essential cookies to ensure the site functions. See <a href="privacy.html" style="color:#fff;text-decoration:underline;">Privacy Policy</a>.</p>
+    <div class="cookie-actions">
+      <button class="btn-cookie" id="cookie-reject">Necessary only</button>
+      <button class="btn-cookie btn-cookie-primary" id="cookie-accept">Accept all</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Simple Cookie Logic
+    const COOKIE_KEY = "lume_cookie_consent";
+    const banner = document.getElementById("cookie-banner");
+    
+    if (!localStorage.getItem(COOKIE_KEY)) {
+      banner.style.display = "block";
+    }
+
+    document.getElementById("cookie-accept").onclick = () => {
+      localStorage.setItem(COOKIE_KEY, "accepted");
+      banner.style.display = "none";
+    };
+    document.getElementById("cookie-reject").onclick = () => {
+      localStorage.setItem(COOKIE_KEY, "rejected");
+      banner.style.display = "none";
+    };
+  </script>
+
 </body>
 </html>
