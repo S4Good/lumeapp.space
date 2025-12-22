@@ -62,19 +62,28 @@
         When you visit this website, the hosting provider automatically collects
         information in so-called server log files. This includes in particular:
       </p>
-      <ul>
-        <li>IP address (possibly shortened or anonymized)</li>
-        <li>Date and time of access</li>
-        <li>Operating system used</li>
-        <li>Browser type and version</li>
-        <li>Referrer URL (previously visited page)</li>
-      </ul>
+      <style>
+        :root {
+          --bg: #0a0b0a;
+          --fg: #e6e7ea;
+          --muted: #9aa0a6;
+          --neon-blue: #00f3ff;
+          --neon-green: #39ff14;
+          --grid-line: rgba(0,243,255,0.2);
+        }
 
-      <h2>3. Contact</h2>
-      <p>
-        If you contact us by email, the data you provide will be used exclusively
-        to process your inquiry. The legal basis is Art. 6(1)(b) GDPR (contract or
-        pre-contractual measures) or Art. 6(1)(f) GDPR (legitimate interest).
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); padding:2rem; background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size:50px 50px; animation:gridDrift 20s linear infinite }
+        @keyframes gridDrift { 0%{background-position:0 0}100%{background-position:-50px 50px} }
+
+        .container { max-width:900px; margin:2rem auto; background: rgba(18,18,18,0.7); padding:2rem; border-radius:8px }
+        h1 { font-size:1.6rem }
+        p { color:#cfcfcf }
+        .brand-logo { width:36px; height:36px; filter: invert(1) brightness(200%) drop-shadow(0 0 5px #00f3ff) }
+
+        .tag-pill { padding:0.3rem 0.8rem; border-radius:999px; background:transparent; color:var(--neon-blue); border:1px solid #00f3ff; box-shadow:0 0 5px #00f3ff }
+        .btn-neon { padding:0.6rem 1rem; border:1px solid var(--neon-blue); background:transparent; color:var(--neon-blue); box-shadow:0 0 10px var(--neon-blue); text-decoration:none }
+        .btn-neon:hover { background:var(--neon-blue); color:#000 }
+      </style>
       </p>
 
       <h2>4. Cookies</h2>
