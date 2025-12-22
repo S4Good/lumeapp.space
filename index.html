@@ -102,6 +102,9 @@
 
     .btn-neon { display:inline-block; margin-top:1.5rem; padding:1rem 2rem; background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); text-shadow:0 0 5px var(--neon-blue); font-weight:700; text-decoration:none; letter-spacing:0.1em; box-shadow:0 0 15px var(--neon-blue); cursor:pointer; transition:all .25s ease }
     .btn-neon:hover { background:var(--neon-blue); color:#000; box-shadow:0 0 25px #fff }
+
+    .cursor { display:inline-block; animation:blink 1s step-end infinite }
+    @keyframes blink { 0%, 100% { opacity:1 } 50% { opacity:0 } }
   </style>
 </head>
 
@@ -134,7 +137,7 @@
       </p>
       
       <a href="https://whop.com/lume-space" class="btn-neon">
-        ACCESS THE EDGE_
+        ACCESS THE <span style="letter-spacing: 3px;">EDGE™</span><span class="cursor">_</span>
       </a>
     </div>
   </div>
