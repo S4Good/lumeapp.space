@@ -61,7 +61,38 @@
 
     @keyframes dotPulse { 0%{transform:scale(1);opacity:.85}50%{transform:scale(1.35);opacity:1}100%{transform:scale(1);opacity:.85} }
 
-    .hero { flex:1; display:flex; align-items:center; justify-content:space-between; max-width:1200px; margin:0 auto; width:100%; position:relative; z-index:1; opacity:0; transform:translateY(12px); animation:heroFadeIn 1.6s ease-out forwards; gap:3rem; }\n    .hero-left { text-align:center; flex:1; }\n    .hero-right { flex:1; display:flex; align-items:center; justify-content:center; }\n    @media (max-width: 900px) { .hero { flex-direction:column; justify-content:center; gap:2rem; } .hero-left { text-align:center; } .hero-right { width:100%; } }
+    @media (max-width: 900px) {
+      .hero {
+        flex-direction: column;
+        justify-content: center;
+        gap: 3rem;
+        margin-top: 2rem;
+        padding: 0 1rem;
+      }
+
+      .hero-left {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      .hero-title {
+        font-size: 2.5rem;
+        display: block;
+        width: 100%;
+      }
+
+      .hero-right {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+
+      .terminal-card {
+        width: 100%;
+        max-width: 400px;
+      }
+    }
 
     /* removed glowing orb to keep title crisp */
 
