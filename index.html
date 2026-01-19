@@ -167,6 +167,30 @@
     @media (prefers-reduced-motion: reduce) {
       * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
+
+    .intelligence-log { width: 100%; max-width: 600px; margin: 3rem auto; padding: 0 1rem; box-sizing: border-box; }
+
+    .intelligence-header { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neon-blue); margin-bottom: 1.5rem; text-align: center; opacity: 0.9; font-weight: 700; }
+
+    .intelligence-entry { background: rgba(20, 22, 20, 0.85); border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 4px; padding: 1.5rem; box-shadow: 0 0 15px rgba(0, 243, 255, 0.05); }
+
+    .entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; gap: 1rem; }
+
+    .entry-title { font-size: 1.1rem; font-weight: 700; color: var(--fg); letter-spacing: 0.05em; margin: 0; }
+
+    .entry-date { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; white-space: nowrap; }
+
+    .entry-body { font-size: 0.95rem; color: var(--fg); line-height: 1.6; margin: 1rem 0; opacity: 0.95; font-family: 'Courier New', monospace; }
+
+    .entry-link { display: inline-block; margin-top: 1rem; padding: 0.6rem 1rem; background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); transition: all 0.25s ease; cursor: pointer; }
+
+    .entry-link:hover { background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 20px rgba(0, 243, 255, 0.6); color: var(--neon-green); border-color: var(--neon-green); }
+
+    @media (max-width: 900px) {
+      .intelligence-log { margin: 2rem auto; }
+      .entry-header { flex-direction: column; align-items: flex-start; }
+      .entry-title { font-size: 1rem; }
+    }
   </style>
 </head>
 
@@ -216,6 +240,19 @@
       </div>
     </div>
   </main>
+
+  <section class="intelligence-log">
+    <h2 class="intelligence-header">LATEST INTELLIGENCE LOG</h2>
+    
+    <article class="intelligence-entry">
+      <div class="entry-header">
+        <h3 class="entry-title">TARGET: SUI/EUR</h3>
+        <span class="entry-date">2026-01-19</span>
+      </div>
+      <p class="entry-body">Market Structure: Cleared Satellite Zone (€1.41). Projection: Approaching Major Resistance €1.55 - €1.58. Status: Active.</p>
+      <a href="#" class="entry-link">[ ACCESS FULL RISK MAP ]</a>
+    </article>
+  </section>
 
   <footer>
     <div>© <span id="year"></span></div>
