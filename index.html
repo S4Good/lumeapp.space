@@ -186,6 +186,41 @@
 
     .entry-link:hover { background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 20px rgba(0, 243, 255, 0.6); color: var(--neon-green); border-color: var(--neon-green); }
 
+    /* Weekly Intelligence Report - Monday Update Indicator */
+    .monday-indicator { display: block; font-size: 0.7rem; color: var(--neon-green); letter-spacing: 0.1em; margin-top: 1rem; opacity: 0.85; font-weight: 700; text-transform: uppercase; animation: mondayPulse 2s ease-in-out infinite; }
+
+    @keyframes mondayPulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+    /* Modal Overlay */
+    .intelligence-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
+
+    .intelligence-modal-overlay.active { display: flex; }
+
+    /* Modal Box */
+    .intelligence-modal { background: rgba(20, 22, 20, 0.95); border: 1px solid rgba(0, 243, 255, 0.4); border-radius: 4px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.05); position: relative; }
+
+    .intelligence-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px dashed rgba(0, 243, 255, 0.2); }
+
+    .intelligence-modal-title { font-size: 1rem; font-weight: 700; color: var(--fg); letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
+
+    .intelligence-modal-close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 2px; color: var(--neon-blue); font-size: 1.5rem; cursor: pointer; transition: all 0.25s ease; flex-shrink: 0; }
+
+    .intelligence-modal-close:hover { background: rgba(0, 243, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
+
+    .intelligence-modal-content { font-family: 'Courier New', monospace; font-size: 0.9rem; color: var(--fg); line-height: 1.6; opacity: 0.95; }
+
+    .modal-section { margin-bottom: 1.5rem; }
+
+    .modal-section-title { font-size: 0.85rem; color: var(--neon-blue); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.5rem; }
+
+    .modal-section-content { font-size: 0.9rem; color: var(--fg); line-height: 1.7; }
+
+    @media (max-width: 600px) {
+      .intelligence-modal { padding: 1.5rem; margin: 1rem; }
+      .intelligence-modal-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .intelligence-modal-close { align-self: flex-end; margin-top: -1rem; }
+    }
+
     @media (max-width: 900px) {
       .intelligence-log { margin: 2rem auto; }
       .entry-header { flex-direction: column; align-items: flex-start; }
@@ -219,7 +254,8 @@
         <span class="entry-date">2026-01-19</span>
       </div>
       <p class="entry-body">Market Structure: Cleared Satellite Zone (€1.41). Projection: Approaching Major Resistance €1.55 - €1.58. Status: Active.</p>
-      <a href="#" class="entry-link">[ ACCESS FULL RISK MAP ]</a>
+      <button class="entry-link" id="access-risk-map-btn">[ ACCESS FULL RISK MAP ]</button>
+      <span class="monday-indicator">// NEXT INTELLIGENCE DROP: EVERY MONDAY</span>
     </article>
   </section>
 
@@ -261,6 +297,46 @@
     <button class="btn-cookie btn-cookie-primary" id="cookie-accept">Accept all</button>
   </div>
 
+  <!-- Weekly Intelligence Report Modal -->
+  <div class="intelligence-modal-overlay" id="intelligence-modal-overlay">
+    <div class="intelligence-modal">
+      <div class="intelligence-modal-header">
+        <h2 class="intelligence-modal-title">Weekly Intelligence Report</h2>
+        <button class="intelligence-modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div class="intelligence-modal-content">
+        <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px dashed rgba(0, 243, 255, 0.2);">
+          <div style="font-size: 0.85rem; color: var(--neon-blue); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.8rem;">// INTELLIGENCE LOG: SUI/EUR</div>
+          <div style="font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; opacity: 0.8;">DATE: 2026-01-19 | STATUS: ACTIVE | PHASE: SATELLITE CLEARANCE</div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">Market Structure</div>
+          <div class="modal-section-content">
+            The asset has successfully cleared the Satellite Zone (€1.41). This confirms the initial breakout structure. We are now transitioning from the accumulation phase into the 'Golden Corridor.' Volatility is expected to compress before the next expansion leg.
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">Execution Protocol</div>
+          <div class="modal-section-content">
+            <div style="margin-bottom: 0.8rem;"><span style="color: var(--neon-green); font-weight: 700;">Current Trajectory:</span> Approaching Major Resistance.</div>
+            <div style="margin-bottom: 0.8rem;"><span style="color: var(--neon-green); font-weight: 700;">Target Zone (Medium-Term):</span> €1.55 – €1.58.</div>
+            <div style="margin-bottom: 0.8rem;"><span style="color: var(--neon-green); font-weight: 700;">Invalidation Level (Hard Stop):</span> Daily close below €1.35.</div>
+            <div><span style="color: var(--neon-green); font-weight: 700;">Action:</span> HOLD. Do not compound yet. Allow the trend to establish support above €1.41.</div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="modal-section-title">The Lume Edge (Mindset)</div>
+          <div class="modal-section-content">
+            The amateur sells at the first sign of profit. The professional waits for the target. We do not trade the noise; we trade the structure. Patience is the only edge that cannot be automated.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -277,6 +353,35 @@
       document.getElementById("cookie-accept").onclick = () => handleConsent("accepted");
       document.getElementById("cookie-reject").onclick = () => handleConsent("rejected");
     })();
+
+    // Weekly Intelligence Report Modal
+    const modalOverlay = document.getElementById("intelligence-modal-overlay");
+    const modalCloseBtn = document.getElementById("modal-close-btn");
+    const accessRiskMapBtn = document.getElementById("access-risk-map-btn");
+
+    // Open modal
+    accessRiskMapBtn.addEventListener("click", function() {
+      modalOverlay.classList.add("active");
+    });
+
+    // Close modal on X button
+    modalCloseBtn.addEventListener("click", function() {
+      modalOverlay.classList.remove("active");
+    });
+
+    // Close modal on background click
+    modalOverlay.addEventListener("click", function(e) {
+      if (e.target === modalOverlay) {
+        modalOverlay.classList.remove("active");
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        modalOverlay.classList.remove("active");
+      }
+    });
   </script>
 
 </body>
