@@ -192,7 +192,7 @@
     @keyframes mondayPulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
 
     /* Modal Overlay */
-    .intelligence-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
+    .intelligence-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
 
     .intelligence-modal-overlay.active { display: flex; }
 
@@ -224,6 +224,8 @@
     .modal-execution-label { color: var(--neon-green); font-weight: 700; }
 
     body.modal-open { overflow: hidden; }
+
+    .modal-header-wrapper { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px dashed rgba(0, 243, 255, 0.2); }
 
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -321,7 +323,7 @@
         <button class="intelligence-modal-close" id="modal-close-btn" aria-label="Close Intelligence Report" title="Close (Esc)">×</button>
       </div>
       <div class="intelligence-modal-content">
-        <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px dashed rgba(0, 243, 255, 0.2);">
+        <div class="modal-header-wrapper">
           <div class="modal-header-title" id="modal-asset">// INTELLIGENCE LOG: SUI/EUR</div>
           <div class="modal-header-meta" id="modal-meta">DATE: 2026-01-19 | STATUS: ACTIVE | PHASE: SATELLITE CLEARANCE</div>
         </div>
