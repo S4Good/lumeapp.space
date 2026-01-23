@@ -215,6 +215,22 @@
 
     .modal-section-content { font-size: 0.9rem; color: var(--fg); line-height: 1.7; }
 
+    .modal-header-title { font-size: 0.85rem; color: var(--neon-blue); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.8rem; }
+
+    .modal-header-meta { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; opacity: 0.8; }
+
+    .modal-execution-item { margin-bottom: 0.8rem; }
+
+    .modal-execution-label { color: var(--neon-green); font-weight: 700; }
+
+    body.modal-open { overflow: hidden; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+    .intelligence-modal-overlay.active { animation: fadeIn 0.2s ease-out; }
+    .intelligence-modal-overlay.active .intelligence-modal { animation: scaleUp 0.3s ease-out; }
+
     @media (max-width: 600px) {
       .intelligence-modal { padding: 1.5rem; margin: 1rem; }
       .intelligence-modal-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
@@ -298,38 +314,38 @@
   </div>
 
   <!-- Weekly Intelligence Report Modal -->
-  <div class="intelligence-modal-overlay" id="intelligence-modal-overlay">
+  <div class="intelligence-modal-overlay" id="intelligence-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
     <div class="intelligence-modal">
       <div class="intelligence-modal-header">
-        <h2 class="intelligence-modal-title">Weekly Intelligence Report</h2>
-        <button class="intelligence-modal-close" id="modal-close-btn">&times;</button>
+        <h2 class="intelligence-modal-title" id="modal-title">Weekly Intelligence Report</h2>
+        <button class="intelligence-modal-close" id="modal-close-btn" aria-label="Close Intelligence Report" title="Close (Esc)">×</button>
       </div>
       <div class="intelligence-modal-content">
         <div style="margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px dashed rgba(0, 243, 255, 0.2);">
-          <div style="font-size: 0.85rem; color: var(--neon-blue); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.8rem;">// INTELLIGENCE LOG: SUI/EUR</div>
-          <div style="font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; opacity: 0.8;">DATE: 2026-01-19 | STATUS: ACTIVE | PHASE: SATELLITE CLEARANCE</div>
+          <div class="modal-header-title" id="modal-asset">// INTELLIGENCE LOG: SUI/EUR</div>
+          <div class="modal-header-meta" id="modal-meta">DATE: 2026-01-19 | STATUS: ACTIVE | PHASE: SATELLITE CLEARANCE</div>
         </div>
 
         <div class="modal-section">
           <div class="modal-section-title">Market Structure</div>
-          <div class="modal-section-content">
+          <div class="modal-section-content" id="modal-structure">
             The asset has successfully cleared the Satellite Zone (€1.41). This confirms the initial breakout structure. We are now transitioning from the accumulation phase into the 'Golden Corridor.' Volatility is expected to compress before the next expansion leg.
           </div>
         </div>
 
         <div class="modal-section">
           <div class="modal-section-title">Execution Protocol</div>
-          <div class="modal-section-content">
-            <div style="margin-bottom: 0.8rem;"><span style="color: var(--neon-green); font-weight: 700;">Current Trajectory:</span> Approaching Major Resistance.</div>
-            <div style="margin-bottom: 0.8rem;"><span style="color: var(--neon-green); font-weight: 700;">Target Zone (Medium-Term):</span> €1.55 – €1.58.</div>
-            <div style="margin-bottom: 0.8rem;"><span style="color: var(--neon-green); font-weight: 700;">Invalidation Level (Hard Stop):</span> Daily close below €1.35.</div>
-            <div><span style="color: var(--neon-green); font-weight: 700;">Action:</span> HOLD. Do not compound yet. Allow the trend to establish support above €1.41.</div>
+          <div class="modal-section-content" id="modal-execution">
+            <div class="modal-execution-item"><span class="modal-execution-label">Current Trajectory:</span> Approaching Major Resistance.</div>
+            <div class="modal-execution-item"><span class="modal-execution-label">Target Zone (Medium-Term):</span> €1.55 – €1.58.</div>
+            <div class="modal-execution-item"><span class="modal-execution-label">Invalidation Level (Hard Stop):</span> Daily close below €1.35.</div>
+            <div class="modal-execution-item"><span class="modal-execution-label">Action:</span> HOLD. Do not compound yet. Allow the trend to establish support above €1.41.</div>
           </div>
         </div>
 
         <div class="modal-section">
           <div class="modal-section-title">The Lume Edge (Mindset)</div>
-          <div class="modal-section-content">
+          <div class="modal-section-content" id="modal-mindset">
             The amateur sells at the first sign of profit. The professional waits for the target. We do not trade the noise; we trade the structure. Patience is the only edge that cannot be automated.
           </div>
         </div>
@@ -358,28 +374,75 @@
     const modalOverlay = document.getElementById("intelligence-modal-overlay");
     const modalCloseBtn = document.getElementById("modal-close-btn");
     const accessRiskMapBtn = document.getElementById("access-risk-map-btn");
+    const mondayIndicator = document.querySelector(".monday-indicator");
 
-    // Open modal
-    accessRiskMapBtn.addEventListener("click", function() {
+    // Update day-of-week indicator to show next Monday date
+    function updateMondayIndicator() {
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const daysUntilMonday = (1 - dayOfWeek + 7) % 7 || 7;
+      const nextMonday = new Date(today);
+      nextMonday.setDate(today.getDate() + daysUntilMonday);
+      const mondayStr = nextMonday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      mondayIndicator.textContent = `// NEXT INTELLIGENCE DROP: ${mondayStr.toUpperCase()}`;
+    }
+    updateMondayIndicator();
+
+    // Modal control functions
+    function openModal() {
       modalOverlay.classList.add("active");
-    });
+      modalOverlay.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+      // Focus first focusable element
+      const focusableElements = modalOverlay.querySelectorAll('button, [href], input, select, textarea');
+      if (focusableElements.length > 0) focusableElements[0].focus();
+    }
 
-    // Close modal on X button
-    modalCloseBtn.addEventListener("click", function() {
+    function closeModal() {
       modalOverlay.classList.remove("active");
-    });
+      modalOverlay.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      accessRiskMapBtn.focus();
+    }
 
-    // Close modal on background click
+    // Open modal on button click
+    accessRiskMapBtn.addEventListener("click", openModal);
+
+    // Close modal on X button click
+    modalCloseBtn.addEventListener("click", closeModal);
+
+    // Close modal on background overlay click
     modalOverlay.addEventListener("click", function(e) {
-      if (e.target === modalOverlay) {
-        modalOverlay.classList.remove("active");
-      }
+      if (e.target === modalOverlay) closeModal();
     });
 
-    // Close modal on Escape key
+    // Keyboard navigation for modal
     document.addEventListener("keydown", function(e) {
+      if (!modalOverlay.classList.contains("active")) return;
+
+      // Close on Escape
       if (e.key === "Escape") {
-        modalOverlay.classList.remove("active");
+        e.preventDefault();
+        closeModal();
+      }
+
+      // Trap Tab focus within modal
+      if (e.key === "Tab") {
+        const focusableElements = modalOverlay.querySelectorAll('button, [href], input, select, textarea');
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+        
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     });
   </script>
