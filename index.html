@@ -164,6 +164,10 @@
     .footer-links a { margin-left:1rem; padding: 0.5rem; text-decoration:none; color:inherit }
     .footer-links a:hover { text-decoration:underline }
 
+    /* Added for inline style replacements */
+    .ls-letter-spacing-3px { letter-spacing: 3px; }
+    .ls-hidden { display: none !important; }
+
     @media (prefers-reduced-motion: reduce) {
       * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
@@ -289,7 +293,7 @@
         </p>
         
         <a href="https://whop.com/lume-space" class="btn-neon">
-          ACCESS THE <span style="letter-spacing: 3px;">EDGE™</span><span class="cursor">_</span>
+          ACCESS THE <span class="ls-letter-spacing-3px">EDGE™</span><span class="cursor">_</span>
         </a>
       </div>
     </div>
@@ -304,7 +308,7 @@
     </div>
   </footer>
 
-  <div class="cookie-banner" id="cookie-banner" style="display:none;">
+  <div class="cookie-banner ls-hidden" id="cookie-banner">
     <h3>Cookies &amp; Privacy</h3>
     <p>
       We use technically necessary storage and — with your consent — optional cookies.
