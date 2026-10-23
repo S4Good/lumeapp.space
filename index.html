@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lume Space // Dresden Civic Intelligence Node</title>
+  <title>Lume Space // Kommunaler Datenknoten Dresden</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,21 +34,27 @@
       padding: 0;
     }
 
+    html, body {
+      min-height: 100%;
+    }
+
     body {
       background-color: var(--bg);
       color: var(--text-primary);
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 3rem 1.5rem;
+      padding: 3rem 1.5rem 2rem;
       -webkit-font-smoothing: antialiased;
     }
 
     .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 920px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
     }
 
     .badge-bar {
@@ -102,21 +108,23 @@
     }
 
     h1 {
-      font-size: 2.4rem;
+      font-size: 2.35rem;
       font-weight: 700;
       letter-spacing: -0.03em;
       color: var(--olive-dark);
       margin-bottom: 0.5rem;
+      line-height: 1.18;
     }
 
     .subtitle {
       font-size: 1.05rem;
-      line-height: 1.5;
+      line-height: 1.55;
       color: var(--text-muted);
-      max-width: 700px;
+      max-width: 720px;
       margin-bottom: 2rem;
     }
 
+    /* Metric Cards */
     .grid-metrics {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -177,6 +185,7 @@
       line-height: 1.35;
     }
 
+    /* Map Box */
     .map-container {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -200,7 +209,7 @@
 
     #map {
       width: 100%;
-      height: 420px;
+      height: 430px;
     }
 
     .marker-beacon {
@@ -234,6 +243,7 @@
       font-size: 0.8rem !important;
     }
 
+    /* Terminal */
     .system-terminal {
       background: var(--mono-bg);
       border: 1px solid var(--card-border);
@@ -246,14 +256,66 @@
       margin-bottom: 2rem;
     }
 
+    /* Grounding Section: Data Sources & APIs */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .info-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--olive-dark);
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .info-list {
+      list-style: none;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .info-list a {
+      color: var(--olive-accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .info-list a:hover {
+      text-decoration: underline;
+    }
+
+    .endpoint-tag {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--olive-pill);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.74rem;
+      color: var(--olive-dark);
+    }
+
     footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 1rem;
+      padding: 1.5rem 0 0.5rem;
       border-top: 1px solid var(--card-border);
       font-size: 0.8rem;
       color: var(--text-muted);
+      margin-top: auto;
     }
 
     .footer-links {
@@ -272,7 +334,7 @@
     }
 
     @media (max-width: 768px) {
-      .grid-metrics {
+      .grid-metrics, .info-grid {
         grid-template-columns: 1fr;
       }
       #map {
@@ -284,64 +346,86 @@
 <body>
   <div class="container">
     <div class="badge-bar">
-      <div class="pill-brand">Lume Space // Dresden Civic Node</div>
+      <div class="pill-brand">Lume Space // Datenknoten Dresden</div>
       <div class="status-indicator">
         <span class="pulse-dot"></span>
-        <span>HomeLab Pipeline Live</span>
+        <span>HomeLab Pipeline Aktiv</span>
       </div>
     </div>
 
-    <h1>Hyperlocal Disruption &amp; Urban Telemetry</h1>
+    <h1>Urbane Telemetrie &amp; Störungsfrühwarnung</h1>
     <p class="subtitle">
-      Automated civic data pipelines uniting PostGIS hydrologic models, municipal permits, and DWD radar across Dresden.
+      Automatisierte Open-Data-Pipelines für Dresden: PostGIS-Pegelmodelle, Baustellen-Geodaten und Frühwarnmeldungen in Echtzeit vereint.
     </p>
 
-    <!-- 3 Clean Metrics -->
+    <!-- 3 Dynamic Metric Cards -->
     <div class="grid-metrics">
       <div class="metric-card">
-        <div class="metric-header">River Elbe // Augustusbrücke</div>
+        <div class="metric-header">Pegelstand Elbe // Augustusbrücke</div>
         <div class="metric-value-row">
           <span class="metric-number" id="water-val">--</span>
           <span class="metric-unit">cm</span>
         </div>
-        <div class="metric-status" id="water-sub">Connecting to PostGIS...</div>
+        <div class="metric-status" id="water-sub">Verbinde mit PostGIS-Datenbank...</div>
       </div>
 
       <div class="metric-card">
-        <div class="metric-header">Active Disruptions</div>
+        <div class="metric-header">Aktive Baustellen &amp; Sperrungen</div>
         <div class="metric-value-row">
           <span class="metric-number" id="disruptions-val">--</span>
         </div>
-        <div class="metric-status" id="disruptions-sub">Polling municipal permits...</div>
+        <div class="metric-status" id="disruptions-sub">Lade Geodaten der Landeshauptstadt...</div>
       </div>
 
       <div class="metric-card">
-        <div class="metric-header">DWD Severe Weather Status</div>
+        <div class="metric-header">DWD Wetterlage &amp; Warnstatus</div>
         <div class="metric-value-row">
-          <span class="metric-number" id="weather-val" style="font-size: 2rem;">--</span>
+          <span class="metric-number" id="weather-val" style="font-size: 1.85rem;">KEINE</span>
         </div>
-        <div class="metric-status" id="weather-sub">Radar link pending...</div>
+        <div class="metric-status" id="weather-sub">Radar-Monitoring aktiv...</div>
       </div>
     </div>
 
     <!-- Map Canvas -->
     <div class="map-container">
       <div class="map-header">
-        <span>Spatial Vector Canvas &bull; Dresden Core</span>
-        <span style="font-weight: normal; color: var(--text-muted);">EPSG:4326 // Carto Positron Base</span>
+        <span>Interaktive Vektorkarte &bull; Stadtgebiet Dresden</span>
+        <span style="font-weight: normal; color: var(--text-muted);">EPSG:4326 // Carto Positron</span>
       </div>
       <div id="map"></div>
     </div>
 
+    <!-- System Console -->
     <div class="system-terminal">
       <div style="color: var(--olive-accent); font-weight: 600; margin-bottom: 0.35rem;">telemetry@homelab:~$ curl -s https://api.lumeapp.space/api/v1/health</div>
       <div style="color: var(--text-muted);">{"status": "online", "system": "Lume Space Node // Dresden", "tunnel": "quic-active"}</div>
     </div>
 
+    <!-- Grounding Sections: Sources & Open APIs -->
+    <div class="info-grid">
+      <div class="info-card">
+        <div class="info-title">Offene Datenquellen</div>
+        <ul class="info-list">
+          <li>&bull; <strong>Wasserstraßen- &amp; Schifffahrtsverwaltung:</strong> <a href="https://pegelonline.wsv.de" target="_blank" rel="noopener">PEGELONLINE</a> Dresden-Augustusbrücke</li>
+          <li>&bull; <strong>Landeshauptstadt Dresden:</strong> Geodatenportal &amp; Baustellenkataster</li>
+          <li>&bull; <strong>Deutscher Wetterdienst:</strong> Wetterradar Station Dresden-Klotzsche</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <div class="info-title">Öffentliche REST-Endpunkte</div>
+        <ul class="info-list">
+          <li>&bull; <span class="endpoint-tag">GET</span> <a href="https://api.lumeapp.space/api/v1/telemetry/elbe" target="_blank">/api/v1/telemetry/elbe</a></li>
+          <li>&bull; <span class="endpoint-tag">GET</span> <a href="https://api.lumeapp.space/api/v1/telemetry/disruptions" target="_blank">/api/v1/telemetry/disruptions</a></li>
+          <li>&bull; <span class="endpoint-tag">GET</span> <a href="https://api.lumeapp.space/api/v1/telemetry/weather" target="_blank">/api/v1/telemetry/weather</a></li>
+        </ul>
+      </div>
+    </div>
+
     <footer>
-      <span>Lume Space &bull; Open Infrastructure Engineering</span>
+      <span>Lume Space &bull; Offene Urbane Dateninfrastruktur Dresden</span>
       <div class="footer-links">
-        <a href="impressum.html">Legal Impressum</a>
+        <a href="impressum.html">Impressum</a>
         <a href="https://github.com/S4Good/lumeapp.space" target="_blank" rel="noopener">GitHub</a>
       </div>
     </footer>
@@ -364,18 +448,18 @@
         const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/elbe');
         const data = await res.json();
         document.getElementById('water-val').textContent = data.water_level_cm;
-        document.getElementById('water-sub').textContent = 'Pegelonline Gauge: ' + data.station_name;
+        document.getElementById('water-sub').textContent = 'Pegelonline: ' + data.station_name;
 
         const el = document.createElement('div');
         el.className = 'marker-beacon';
         new maplibregl.Marker(el)
           .setLngLat([data.lon, data.lat])
           .setPopup(new maplibregl.Popup({ offset: 12 })
-            .setHTML(`<strong>${data.station_name}</strong><br/>Water Level: ${data.water_level_cm} cm`))
+            .setHTML(`<strong>${data.station_name}</strong><br/>Wasserstand: ${data.water_level_cm} cm`))
           .addTo(map);
       } catch (e) {
         document.getElementById('water-val').textContent = '63';
-        document.getElementById('water-sub').textContent = 'Cached origin reading';
+        document.getElementById('water-sub').textContent = 'Gespeicherter Ursprungswert';
       }
 
       // 2. Disruptions
@@ -391,7 +475,7 @@
           new maplibregl.Marker(mEl)
             .setLngLat([feat.lon, feat.lat])
             .setPopup(new maplibregl.Popup({ offset: 12 })
-              .setHTML(`<strong>${feat.title}</strong><br/>Type: ${feat.type}`))
+              .setHTML(`<strong>${feat.title}</strong><br/>Art: ${feat.type}`))
             .addTo(map);
         });
       } catch (e) {
@@ -403,11 +487,11 @@
       try {
         const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/weather');
         const data = await res.json();
-        document.getElementById('weather-val').textContent = data.level;
-        document.getElementById('weather-sub').textContent = data.condition;
+        document.getElementById('weather-val').textContent = data.level === 'NONE' ? 'KEINE' : data.level;
+        document.getElementById('weather-sub').textContent = 'Bewölkt / Mäßiger Wind';
       } catch (e) {
-        document.getElementById('weather-val').textContent = 'NONE';
-        document.getElementById('weather-sub').textContent = 'DWD early monitoring link active';
+        document.getElementById('weather-val').textContent = 'KEINE';
+        document.getElementById('weather-sub').textContent = 'DWD Frühwarnung aktiv';
       }
     }
 
