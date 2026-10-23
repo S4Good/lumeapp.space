@@ -16,7 +16,7 @@
   <style>
     :root {
       --bg: #F6F3EC;
-      --card-bg: rgba(246, 243, 236, 0.88);
+      --card-bg: rgba(246, 243, 236, 0.90);
       --card-border: rgba(22, 48, 36, 0.12);
       --text-primary: #163024;
       --text-muted: #64746B;
@@ -25,6 +25,7 @@
       --olive-pill: #E4ECE6;
       --green-live: #2E8B57;
       --accent-coral: #C25B3F;
+      --corridor-red: #D32F2F;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,7 +40,6 @@
       z-index: 1;
     }
 
-    /* Ambient Glass Panel Styling */
     .glass-panel {
       position: absolute;
       z-index: 10;
@@ -52,7 +52,7 @@
       color: var(--text-primary);
     }
 
-    /* Top Left Header & Status Cockpit */
+    /* Top Left Telemetry Cockpit */
     .cockpit-top-left {
       top: 20px;
       left: 20px;
@@ -64,7 +64,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .brand-pill {
@@ -106,10 +106,9 @@
       font-size: 0.8rem;
       color: var(--text-muted);
       line-height: 1.4;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
-    /* Primary Telemetry Metrics Row */
     .metrics-strip {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -118,33 +117,12 @@
       border-top: 1px solid var(--card-border);
     }
 
-    .metric-box {
-      display: flex;
-      flex-direction: column;
-    }
+    .metric-box { display: flex; flex-direction: column; }
+    .m-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+    .m-val { font-size: 1.25rem; font-weight: 700; color: var(--olive-dark); margin: 2px 0; }
+    .m-sub { font-size: 0.68rem; color: var(--text-muted); }
 
-    .m-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-    }
-
-    .m-val {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--olive-dark);
-      line-height: 1.2;
-      margin: 2px 0;
-    }
-
-    .m-sub {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-    }
-
-    /* Quick Filter Pills (Top Center) */
+    /* Top Navigation Filters */
     .filter-dock {
       top: 20px;
       left: 50%;
@@ -171,44 +149,44 @@
     .dock-btn:hover { background: rgba(22, 48, 36, 0.08); }
     .dock-btn.active { background: var(--olive-dark); color: #FFF; }
 
-    /* Tactical Inspector Drawer (Bottom Left) */
+    /* Bottom Inspector Drawer */
     .inspector-dock {
       bottom: 24px;
       left: 20px;
-      width: 360px;
-      padding: 16px 18px;
+      width: 400px;
+      padding: 18px 20px;
     }
 
     .insp-title {
-      font-size: 0.85rem;
+      font-size: 0.88rem;
       font-weight: 700;
       color: var(--olive-dark);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .insp-tag {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.68rem;
-      font-weight: 600;
-      padding: 2px 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
       border-radius: 4px;
       background: var(--olive-pill);
     }
 
     .insp-body {
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
     /* Bottom Right Utility Bar */
     .utility-bar {
       bottom: 24px;
       right: 20px;
-      padding: 8px 14px;
+      padding: 8px 16px;
       border-radius: 999px;
       display: flex;
       gap: 16px;
@@ -216,18 +194,14 @@
       font-weight: 500;
     }
 
-    .utility-bar a {
-      color: var(--olive-accent);
-      text-decoration: none;
-    }
-
+    .utility-bar a { color: var(--olive-accent); text-decoration: none; }
     .utility-bar a:hover { text-decoration: underline; }
 
-    /* Map Markers */
+    /* Map Beacons */
     .beacon-wrapper {
       position: relative;
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -243,41 +217,35 @@
       z-index: 2;
     }
 
-    .beacon-core.coral {
-      background: var(--accent-coral);
-    }
+    .beacon-core.coral { background: var(--accent-coral); }
 
     .beacon-radar {
       position: absolute;
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background: rgba(22, 48, 36, 0.4);
-      animation: sonar 2.4s infinite cubic-bezier(0, 0.2, 0.8, 1);
+      background: rgba(22, 48, 36, 0.45);
+      animation: sonar 2.2s infinite cubic-bezier(0, 0.2, 0.8, 1);
       z-index: 1;
     }
 
-    .beacon-radar.coral {
-      background: rgba(194, 91, 63, 0.45);
-    }
+    .beacon-radar.coral { background: rgba(194, 91, 63, 0.5); }
 
     @keyframes sonar {
       0% { transform: scale(0.6); opacity: 1; }
-      100% { transform: scale(3.0); opacity: 0; }
+      100% { transform: scale(3.2); opacity: 0; }
     }
 
     @media (max-width: 768px) {
       .cockpit-top-left { width: calc(100vw - 40px); }
       .filter-dock { display: none; }
-      .inspector-dock { width: calc(100vw - 40px); bottom: 65px; }
+      .inspector-dock { width: calc(100vw - 40px); bottom: 70px; }
     }
   </style>
 </head>
 <body>
-  <!-- Full-Viewport Canvas -->
   <div id="map"></div>
 
-  <!-- Cockpit Header & Live Stats -->
   <div class="glass-panel cockpit-top-left">
     <div class="brand-row">
       <span class="brand-pill"><span class="live-pulse"></span> Node DD-01 Live</span>
@@ -289,8 +257,8 @@
     <div class="metrics-strip">
       <div class="metric-box">
         <span class="m-label">Pegel Elbe</span>
-        <span class="m-val"><span id="elbe-val">--</span> <span style="font-size: 0.8rem;">cm</span></span>
-        <span class="m-sub" id="elbe-sub">Normal</span>
+        <span class="m-val"><span id="elbe-val">--</span> <span style="font-size: 0.75rem;">cm</span></span>
+        <span class="m-sub" id="elbe-sub">Augustusbrücke</span>
       </div>
       <div class="metric-box">
         <span class="m-label">Störungen</span>
@@ -299,32 +267,29 @@
       </div>
       <div class="metric-box">
         <span class="m-label">Wetter DWD</span>
-        <span class="m-val" id="dwd-val" style="font-size: 1rem; line-height: 1.6;">KEINE</span>
+        <span class="m-val" id="dwd-val" style="font-size: 0.95rem; line-height: 1.6;">KEINE</span>
         <span class="m-sub">Klotzsche</span>
       </div>
     </div>
   </div>
 
-  <!-- Quick Filter Bar -->
   <div class="glass-panel filter-dock">
     <button class="dock-btn active" onclick="flyToSpot(13.7388, 51.0543, 13.5)">Dresden Core</button>
-    <button class="dock-btn" onclick="flyToSpot(13.7483, 51.0526, 16.0)">Carolabrücke Sperrung</button>
-    <button class="dock-btn" onclick="flyToSpot(13.7388, 51.0543, 15.5)">Augustusbrücke Pegel</button>
-    <button class="dock-btn" onclick="flyToSpot(13.7621, 51.0634, 15.5)">Bautzner Str. Tram</button>
+    <button class="dock-btn" onclick="focusCorridor('carola')">🚧 Carolabrücke Sperrung</button>
+    <button class="dock-btn" onclick="focusCorridor('elbe')">🌊 Elbe &amp; Uferradwege</button>
+    <button class="dock-btn" onclick="focusCorridor('bautzner')">🚋 Bautzner Str. Tram</button>
   </div>
 
-  <!-- Tactical Inspector Drawer -->
   <div class="glass-panel inspector-dock">
     <div class="insp-title">
-      <span id="insp-header">Objektinspektion aktiv</span>
-      <span class="insp-tag" id="insp-tag">BEREIT</span>
+      <span id="insp-header">Carolabrücke Sperrzone</span>
+      <span class="insp-tag" id="insp-tag" style="color: var(--accent-coral);">VOLLSPERRUNG</span>
     </div>
     <div class="insp-body" id="insp-desc">
-      Wählen Sie ein Sensorelement oder eine Baustellenzone auf der Karte aus, um Echtzeitdaten und Wegeauswirkungen abzurufen.
+      Einsturzbereich Zug C gesperrt. Rad- und Fußverkehr wird über die Augustusbrücke (grüne Route) umgeleitet. Kfz nutzen die Albertbrücke.
     </div>
   </div>
 
-  <!-- Footprint & Impressum -->
   <div class="glass-panel utility-bar">
     <span>PostGIS 16 &bull; Cloudflare QUIC</span>
     <a href="impressum.html">Impressum</a>
@@ -335,16 +300,16 @@
     const map = new maplibregl.Map({
       container: 'map',
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-      center: [13.7388, 51.0543],
-      zoom: 12.2,
-      pitch: 42,
-      bearing: -12
+      center: [13.7430, 51.0535],
+      zoom: 13.8,
+      pitch: 45,
+      bearing: -15
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
     function flyToSpot(lon, lat, zoom) {
-      map.flyTo({ center: [lon, lat], zoom: zoom, pitch: 48, speed: 0.9, curve: 1.2 });
+      map.flyTo({ center: [lon, lat], zoom: zoom, pitch: 48, speed: 0.8, curve: 1.2 });
     }
 
     function setInspector(header, desc, tag, isAlert = false) {
@@ -355,11 +320,94 @@
       tagEl.style.color = isAlert ? 'var(--accent-coral)' : 'var(--olive-dark)';
     }
 
+    function focusCorridor(type) {
+      if (type === 'carola') {
+        flyToSpot(13.7500, 51.0530, 16.0);
+        setInspector(
+          'Carolabrücke Brückenzug C (Sperrung)',
+          'Gefahrenzone gesperrt. Umleitung über Augustusbrücke (Fuß/Rad) und Albertbrücke (Kfz/DVB).',
+          'SPERRUNG AKTIV',
+          true
+        );
+      } else if (type === 'elbe') {
+        flyToSpot(13.7388, 51.0543, 15.2);
+        setInspector(
+          'Elbe & Elberadweg Pegelstatus',
+          'Pegelstand 64 cm (Niedrigwasser). Elberadweg Altstadt- und Neustadtseite voll befahrbar.',
+          'RADWEG FREI'
+        );
+      } else if (type === 'bautzner') {
+        flyToSpot(13.7621, 51.0634, 15.8);
+        setInspector(
+          'Bautzner Straße Gleiserneuerung',
+          'Gleis- und Leitungsbauarbeiten. Schienenersatzverkehr DVB Linie 11 eingerichtet.',
+          'BAUSTELLE',
+          true
+        );
+      }
+    }
+
     let syncSec = 0;
     setInterval(() => {
       syncSec++;
       document.getElementById('sync-ticker').textContent = `SYNC: VOR ${syncSec}s`;
     }, 1000);
+
+    map.on('load', () => {
+      // 1. Vector Layer: Carolabrücke Closed Corridor (Red)
+      map.addSource('carola-closed', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [13.7485, 51.0515],
+              [13.7516, 51.0548]
+            ]
+          }
+        }
+      });
+      map.addLayer({
+        id: 'carola-line',
+        type: 'line',
+        source: 'carola-closed',
+        paint: {
+          'line-color': '#D32F2F',
+          'line-width': 6,
+          'line-opacity': 0.85
+        }
+      });
+
+      // 2. Vector Layer: Official Augustusbrücke Commuter Detour (Olive Green)
+      map.addSource('augustus-bypass', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [13.7405, 51.0532],
+              [13.7418, 51.0578]
+            ]
+          }
+        }
+      });
+      map.addLayer({
+        id: 'bypass-line',
+        type: 'line',
+        source: 'augustus-bypass',
+        paint: {
+          'line-color': '#2E8B57',
+          'line-width': 4,
+          'line-dasharray': [2, 1],
+          'line-opacity': 0.9
+        }
+      });
+
+      loadTelemetry();
+      setInterval(loadTelemetry, 30000);
+    });
 
     async function loadTelemetry() {
       syncSec = 0;
@@ -369,19 +417,11 @@
         const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/elbe');
         const data = await res.json();
         document.getElementById('elbe-val').textContent = data.water_level_cm;
-        document.getElementById('elbe-sub').textContent = data.station_name;
 
         const elbeMarker = document.createElement('div');
         elbeMarker.className = 'beacon-wrapper';
         elbeMarker.innerHTML = '<div class="beacon-radar"></div><div class="beacon-core"></div>';
-        elbeMarker.onclick = () => {
-          flyToSpot(data.lon, data.lat, 16);
-          setInspector(
-            `${data.station_name} Pegel`,
-            `Aktueller Pegel beträgt ${data.water_level_cm} cm. Schiffbarkeit und Uferwege im Normalbereich.`,
-            'WSV TELEMETRIE'
-          );
-        };
+        elbeMarker.onclick = () => focusCorridor('elbe');
         new maplibregl.Marker(elbeMarker).setLngLat([data.lon, data.lat]).addTo(map);
       } catch (e) {
         document.getElementById('elbe-val').textContent = '64';
@@ -398,13 +438,12 @@
           m.className = 'beacon-wrapper';
           m.innerHTML = '<div class="beacon-radar coral"></div><div class="beacon-core coral"></div>';
           m.onclick = () => {
-            flyToSpot(f.lon, f.lat, 16.2);
-            setInspector(
-              f.title,
-              `Sektor: ${data.region}. ${f.type}. Ausweichrouten aktiv ausgeschildert.`,
-              'SPERRUNG',
-              true
-            );
+            if (f.id === 'DD-CON-01') focusCorridor('carola');
+            else if (f.id === 'DD-CON-02') focusCorridor('bautzner');
+            else {
+              flyToSpot(f.lon, f.lat, 16.0);
+              setInspector(f.title, `Sektor: ${data.region}. ${f.type}. Ausweichrouten ausgeschildert.`, 'SPERRUNG', true);
+            }
           };
           new maplibregl.Marker(m).setLngLat([f.lon, f.lat]).addTo(map);
         });
@@ -421,12 +460,6 @@
         document.getElementById('dwd-val').textContent = 'KEINE';
       }
     }
-
-    map.on('load', () => {
-      map.flyTo({ center: [13.7388, 51.0543], zoom: 13.5, pitch: 45, speed: 0.6 });
-      loadTelemetry();
-      setInterval(loadTelemetry, 30000);
-    });
   </script>
 </body>
 </html>
