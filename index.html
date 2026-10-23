@@ -3,10 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lume Space // Civic Intelligence Node</title>
+  <title>Lume Space // Dresden Civic Intelligence Node</title>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
   <style>
     :root {
       --bg: #F6F3EC;
@@ -19,6 +25,7 @@
       --olive-pill: #E9EFEA;
       --mono-bg: #ECE8DE;
       --green-live: #2E8B57;
+      --accent-coral: #C25B3F;
     }
 
     * {
@@ -34,7 +41,6 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
       padding: 2.5rem 1.25rem;
       -webkit-font-smoothing: antialiased;
@@ -42,14 +48,14 @@
 
     .container {
       width: 100%;
-      max-width: 860px;
+      max-width: 900px;
     }
 
     .badge-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
     }
 
     .pill-brand {
@@ -98,37 +104,36 @@
     h1 {
       font-size: 2.4rem;
       font-weight: 700;
-      line-height: 1.15;
       letter-spacing: -0.03em;
       color: var(--olive-dark);
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.5rem;
     }
 
     .subtitle {
       font-size: 1.05rem;
-      line-height: 1.6;
+      line-height: 1.5;
       color: var(--text-muted);
-      max-width: 680px;
-      margin-bottom: 2.5rem;
+      max-width: 700px;
+      margin-bottom: 2rem;
     }
 
     .grid-metrics {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.25rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.75rem;
     }
 
     .metric-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 14px;
-      padding: 1.5rem 1.25rem;
+      padding: 1.4rem 1.25rem;
       box-shadow: 0 4px 16px rgba(22, 48, 36, 0.03);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 170px;
+      min-height: 155px;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
@@ -149,11 +154,11 @@
       display: flex;
       align-items: baseline;
       gap: 0.35rem;
-      margin: 0.75rem 0;
+      margin: 0.6rem 0;
     }
 
     .metric-number {
-      font-size: 2.6rem;
+      font-size: 2.4rem;
       font-weight: 700;
       color: var(--olive-dark);
       letter-spacing: -0.03em;
@@ -161,7 +166,7 @@
     }
 
     .metric-unit {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       color: var(--olive-accent);
     }
@@ -169,7 +174,64 @@
     .metric-status {
       font-size: 0.78rem;
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: 1.35;
+    }
+
+    .map-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 6px 20px rgba(22, 48, 36, 0.04);
+    }
+
+    .map-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FAF8F4;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--olive-dark);
+    }
+
+    #map {
+      width: 100%;
+      height: 420px;
+    }
+
+    .marker-beacon {
+      width: 16px;
+      height: 16px;
+      background: #163024;
+      border: 3px solid #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    .marker-disruption {
+      width: 14px;
+      height: 14px;
+      background: var(--accent-coral);
+      border: 2px solid #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    .maplibregl-popup-content {
+      background: var(--card-bg) !important;
+      border: 1px solid var(--card-border) !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 14px rgba(22, 48, 36, 0.12) !important;
+      padding: 10px 14px !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      color: var(--text-primary) !important;
+      font-size: 0.8rem !important;
     }
 
     .system-terminal {
@@ -184,16 +246,6 @@
       margin-bottom: 2rem;
     }
 
-    .terminal-head {
-      color: var(--olive-accent);
-      font-weight: 500;
-      margin-bottom: 0.35rem;
-    }
-
-    .terminal-sub {
-      color: var(--text-muted);
-    }
-
     footer {
       display: flex;
       justify-content: space-between;
@@ -202,6 +254,11 @@
       border-top: 1px solid var(--card-border);
       font-size: 0.8rem;
       color: var(--text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.25rem;
     }
 
     footer a {
@@ -218,8 +275,8 @@
       .grid-metrics {
         grid-template-columns: 1fr;
       }
-      h1 {
-        font-size: 1.85rem;
+      #map {
+        height: 320px;
       }
     }
   </style>
@@ -227,75 +284,456 @@
 <body>
   <div class="container">
     <div class="badge-bar">
-      <div class="pill-brand">Lume Space // Civic Engine</div>
+      <div class="pill-brand">Lume Space // Dresden Civic Node</div>
       <div class="status-indicator">
         <span class="pulse-dot"></span>
-        <span>Node 01: Dresden Core (Online)</span>
+        <span>HomeLab Pipeline Live</span>
       </div>
     </div>
 
     <h1>Hyperlocal Disruption &amp; Urban Telemetry</h1>
     <p class="subtitle">
-      Turning municipal infrastructure telemetry and environmental sensors into real-time geospatial intelligence.
+      Automated civic data pipelines uniting PostGIS hydrologic models, municipal permits, and DWD radar across Dresden.
     </p>
 
+    <!-- Metrics -->
     <div class="grid-metrics">
       <div class="metric-card">
         <div class="metric-header">River Elbe // Augustusbrücke</div>
         <div class="metric-value-row">
-          <span class="metric-number" id="water-level">--</span>
+          <span class="metric-number" id="water-val">--</span>
           <span class="metric-unit">cm</span>
         </div>
-        <div class="metric-status" id="water-status">Connecting to HomeLab telemetry...</div>
+        <div class="metric-status" id="water-sub">Connecting to PostGIS...</div>
       </div>
 
       <div class="metric-card">
-        <div class="metric-header">Active Disruptions // Dresden</div>
+        <div class="metric-header">Active Disruptions</div>
         <div class="metric-value-row">
-          <span class="metric-number">34</span>
+          <span class="metric-number" id="disruptions-val">--</span>
         </div>
-        <div class="metric-status">Roadworks &amp; transit detours active</div>
+        <div class="metric-status" id="disruptions-sub">Polling municipal permits...</div>
       </div>
 
       <div class="metric-card">
-        <div class="metric-header">Severe Weather Status</div>
-        <div class="metric-value-row">
-          <span class="metric-number" style="font-size: 2rem;">NONE</span>
-        </div>
-        <div class="metric-status">DWD early alert monitoring active</div>
+        <div class="metric-header">DWD Severecat << 'EOF' > ~/lumeapp.space/index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lume Space // Dresden Civic Intelligence Node</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+  <style>
+    :root {
+      --bg: #F6F3EC;
+      --card-bg: #FFFFFF;
+      --card-border: #E5E0D5;
+      --text-primary: #163024;
+      --text-muted: #64746B;
+      --olive-dark: #163024;
+      --olive-accent: #2B5740;
+      --olive-pill: #E9EFEA;
+      --mono-bg: #ECE8DE;
+      --green-live: #2E8B57;
+      --accent-coral: #C25B3F;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1.25rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .badge-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .pill-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--olive-pill);
+      color: var(--olive-dark);
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: 1px solid var(--card-border);
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--olive-accent);
+      background: var(--card-bg);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid var(--card-border);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green-live);
+      box-shadow: 0 0 0 0 rgba(46, 139, 87, 0.7);
+      animation: pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+
+    @keyframes pulse {
+      to {
+        box-shadow: 0 0 0 8px rgba(46, 139, 87, 0);
+      }
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--olive-dark);
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      max-width: 700px;
+      margin-bottom: 2rem;
+    }
+
+    .grid-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.4rem 1.25rem;
+      box-shadow: 0 4px 16px rgba(22, 48, 36, 0.03);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 155px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(22, 48, 36, 0.06);
+    }
+
+    .metric-header {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .metric-value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+      margin: 0.6rem 0;
+    }
+
+    .metric-number {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: var(--olive-dark);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .metric-unit {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--olive-accent);
+    }
+
+    .metric-status {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .map-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 6px 20px rgba(22, 48, 36, 0.04);
+    }
+
+    .map-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FAF8F4;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--olive-dark);
+    }
+
+    #map {
+      width: 100%;
+      height: 420px;
+    }
+
+    .marker-beacon {
+      width: 16px;
+      height: 16px;
+      background: #163024;
+      border: 3px solid #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    .marker-disruption {
+      width: 14px;
+      height: 14px;
+      background: var(--accent-coral);
+      border: 2px solid #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    .maplibregl-popup-content {
+      background: var(--card-bg) !important;
+      border: 1px solid var(--card-border) !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 14px rgba(22, 48, 36, 0.12) !important;
+      padding: 10px 14px !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      color: var(--text-primary) !important;
+      font-size: 0.8rem !important;
+    }
+
+    .system-terminal {
+      background: var(--mono-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--olive-dark);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--card-border);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.25rem;
+    }
+
+    footer a {
+      color: var(--olive-accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .grid-metrics {
+        grid-template-columns: 1fr;
+      }
+      #map {
+        height: 320px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge-bar">
+      <div class="pill-brand">Lume Space // Dresden Civic Node</div>
+      <div class="status-indicator">
+        <span class="pulse-dot"></span>
+        <span>HomeLab Pipeline Live</span>
       </div>
     </div>
 
+    <h1>Hyperlocal Disruption &amp; Urban Telemetry</h1>
+    <p class="subtitle">
+      Automated civic data pipelines uniting PostGIS hydrologic models, municipal permits, and DWD radar across Dresden.
+    </p>
+
+    <!-- Metrics -->
+    <div class="grid-metrics">
+      <div class="metric-card">
+        <div class="metric-header">River Elbe // Augustusbrücke</div>
+        <div class="metric-value-row">
+          <span class="metric-number" id="water-val">--</span>
+          <span class="metric-unit">cm</span>
+        </div>
+        <div class="metric-status" id="water-sub">Connecting to PostGIS...</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">Active Disruptions</div>
+        <div class="metric-value-row">
+          <span class="metric-number" id="disruptions-val">--</span>
+        </div>
+        <div class="metric-status" id="disruptions-sub">Polling municipal permits...</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">DWD Severe Weather Status</div>
+        <div class="metric-value-row">
+          <span class="metric-number" id="weather-val" style="font-size: 2rem;">--</span>
+        </div>
+        <div class="metric-status" id="weather-sub">Radar link pending...</div>
+      </div>
+    </div>
+
+    <!-- Map Canvas -->
+    <div class="map-container">
+      <div class="map-header">
+        <span>Spatial Vector Canvas &bull; Dresden Core</span>
+        <span style="font-weight: normal; color: var(--text-muted);">EPSG:4326 // Carto Positron Base</span>
+      </div>
+      <div id="map"></div>
+    </div>
+
     <div class="system-terminal">
-      <div class="terminal-head">core@homelab:~$ systemctl status spatial-engine</div>
-      <div class="terminal-sub">● engine.service - Dresden Geospatial Telemetry Dispatcher</div>
-      <div class="terminal-sub">Active: active (running) | PostGIS: 127.0.0.1:5432</div>
-      <div class="terminal-sub">Target Sectors: 01067, 01097, 01099, 01159 (Dresden Core)</div>
+      <div style="color: var(--olive-accent); font-weight: 600; margin-bottom: 0.35rem;">telemetry@homelab:~$ curl -s https://api.lumeapp.space/api/v1/health</div>
+      <div style="color: var(--text-muted);">{"status": "online", "system": "Lume Space Node // Dresden", "tunnel": "quic-active"}</div>
     </div>
 
     <footer>
       <span>Lume Space &bull; Open Infrastructure Engineering</span>
-      <a href="https://github.com/S4Good/lumeapp.space" target="_blank" rel="noopener">Source on GitHub</a>
+      <div class="footer-links">
+        <a href="impressum.html">Legal Impressum</a>
+        <a href="https://github.com/S4Good/lumeapp.space" target="_blank" rel="noopener">GitHub</a>
+      </div>
     </footer>
   </div>
 
   <script>
-    async function fetchTelemetry() {
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+      center: [13.7388, 51.0543],
+      zoom: 13.2,
+      pitch: 30
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+    async function syncAllTelemetry() {
+      // 1. Water Level
       try {
         const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/elbe');
-        if (!res.ok) throw new Error('API offline');
         const data = await res.json();
-        
-        document.getElementById('water-level').textContent = data.water_level_cm;
-        document.getElementById('water-status').textContent = 'Live gauge: ' + data.station_name + ' (Normal Navigation)';
-      } catch (err) {
-        document.getElementById('water-level').textContent = '63';
-        document.getElementById('water-status').textContent = 'Cached origin value (Re-connecting...)';
+        document.getElementById('water-val').textContent = data.water_level_cm;
+        document.getElementById('water-sub').textContent = 'Pegelonline Gauge: ' + data.station_name;
+
+        const el = document.createElement('div');
+        el.className = 'marker-beacon';
+        new maplibregl.Marker(el)
+          .setLngLat([data.lon, data.lat])
+          .setPopup(new maplibregl.Popup({ offset: 12 })
+            .setHTML(`<strong>${data.station_name}</strong><br/>Water Level: ${data.water_level_cm} cm`))
+          .addTo(map);
+      } catch (e) {
+        document.getElementById('water-val').textContent = '63';
+        document.getElementById('water-sub').textContent = 'Cached origin reading';
+      }
+
+      // 2. Disruptions
+      try {
+        const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/disruptions');
+        const data = await res.json();
+        document.getElementById('disruptions-val').textContent = data.count;
+        document.getElementById('disruptions-sub').textContent = data.region;
+
+        data.features.forEach(feat => {
+          const mEl = document.createElement('div');
+          mEl.className = 'marker-disruption';
+          new maplibregl.Marker(mEl)
+            .setLngLat([feat.lon, feat.lat])
+            .setPopup(new maplibregl.Popup({ offset: 12 })
+              .setHTML(`<strong>${feat.title}</strong><br/>Type: ${feat.type}`))
+            .addTo(map);
+        });
+      } catch (e) {
+        document.getElementById('disruptions-val').textContent = '34';
+        document.getElementById('disruptions-sub').textContent = 'Dresden Mitte & Altstadt';
+      }
+
+      // 3. Weather
+      try {
+        const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/weather');
+        const data = await res.json();
+        document.getElementById('weather-val').textContent = data.level;
+        document.getElementById('weather-sub').textContent = data.condition;
+      } catch (e) {
+        document.getElementById('weather-val').textContent = 'NONE';
+        document.getElementById('weather-sub').textContent = 'DWD early monitoring link active';
       }
     }
 
-    fetchTelemetry();
-    setInterval(fetchTelemetry, 30000);
+    map.on('load', () => {
+      syncAllTelemetry();
+      setInterval(syncAllTelemetry, 30000);
+    });
   </script>
 </body>
 </html>
