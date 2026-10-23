@@ -1,457 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Lume Space</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Market structure intelligence. Weekly edge reports, institutional risk maps, and invalidation levels.">
-  <meta property="og:title" content="Lume Space — Market Structure Intelligence">
-  <meta property="og:description" content="Institutional Grade Clarity. Weekly Edge Reports & Risk Maps.">
-  <meta property="og:type" content="website">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Lume Space">
-  <meta name="twitter:description" content="Decrypting Market Structure.">
-  <link rel="icon" type="image/png" href="favicon.png">
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lume Space // Dresden Civic Telemetry</title>
   <style>
     :root {
-      --bg-black: #0a0b0a; /* Deep black */
-      --bg-charcoal: #141614;
-      --neon-blue: #00f3ff; /* Cyan */
-      --neon-green: #39ff14; /* Brighter green */
-      --grid-line: rgba(0, 243, 255, 0.2); /* More visible */
-      --fg: #e0e6ed;
-      --muted: #889096;
-      --border: rgba(0, 243, 255, 0.35);
+      --bg: #07090e;
+      --panel: #0e131f;
+      --border: #1e293b;
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --amber: #f59e0b;
+      --cyan: #06b6d4;
+      --green: #10b981;
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background-color: var(--bg-black);
-      color: var(--fg);
-      line-height: 1.6;
-      background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-      background-size: 50px 50px;
-      background-attachment: fixed;
-      animation: gridDrift 20s linear infinite;
-      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      padding: 2rem 1rem;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      justify-content: space-between;
+      min-height: 100vh;
+    }
+    .shell {
+      max-width: 780px;
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       padding: 2rem;
-      overflow-x: hidden;
-      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
     }
-
-    @keyframes gridDrift { 0% { background-position: 0 0; } 100% { background-position: -50px 50px; } }
-
-    header, footer { width:100%; display:flex; justify-content:space-between; align-items:center; padding-inline:1.5rem; z-index:2 }
-
-    .brand { display:flex; align-items:center; gap:0.6rem; text-decoration:none; color:inherit }
-    .brand-mark { width:32px; height:32px; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 20px rgba(0,0,0,0.2); }
-    .brand-logo { width:100%; height:100%; object-fit:cover; filter: invert(1) brightness(200%) drop-shadow(0 0 5px #00f3ff); }
-    .brand-name { font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--fg); opacity:0.85 }
-
-    .tag-pill { padding:0.3rem 0.8rem; border-radius:999px; background:transparent; color:var(--neon-blue); letter-spacing:0.14em; font-size:0.75rem; text-transform:uppercase; display:flex; align-items:center; gap:0.4rem; border:1px solid #00f3ff; box-shadow:0 0 5px #00f3ff }
-
-    .tag-dot { width:8px; height:8px; border-radius:50%; background:var(--neon-green); box-shadow:0 0 8px var(--neon-green); animation: dotPulse 2.2s ease-in-out infinite }
-
-    @keyframes dotPulse { 0%{transform:scale(1);opacity:.85}50%{transform:scale(1.35);opacity:1}100%{transform:scale(1);opacity:.85} }
-
-    @media (max-width: 900px) {
-      .hero {
-        flex-direction: column;
-        justify-content: center;
-        gap: 3rem;
-        margin-top: 2rem;
-        padding: 0 1rem;
-      }
-
-      .hero-left {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 1rem;
-      }
-
-      .hero-title {
-        font-size: 2.5rem;
-        display: block;
-        width: 100%;
-      }
-
-      .hero-right {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-      }
-
-      .terminal-card {
-        width: 100%;
-        max-width: 400px;
-        margin-bottom: 5rem;
-      }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
-
-    /* removed glowing orb to keep title crisp */
-
-    .hero-title {
-      font-family: 'Courier New', Courier, monospace;
-      font-weight: 100;
-      color: #ffffff;
-      text-transform: uppercase;
-      text-shadow: 0 0 10px rgba(0,243,255,0.8);
-      animation: glitchText 3s infinite alternate;
-      font-size: clamp(1.8rem, 5vw, 4rem);
-      letter-spacing: clamp(0.1em, 2vw, 0.5em);
-      word-break: break-word;
-      text-align: center;
+    .brand {
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--cyan);
+      font-size: 0.9rem;
+    }
+    .node-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--green);
+      font-family: monospace;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green);
+    }
+    h1 {
+      font-size: 2.1rem;
+      font-weight: 700;
       line-height: 1.2;
+      margin-bottom: 1rem;
+      color: #fff;
     }
-
-    @keyframes glitchText {
-      0% { text-shadow: 0 0 10px rgba(0,243,255,0.85); transform: translateX(0); }
-      25% { text-shadow: 0 0 12px rgba(0,243,255,0.95); transform: translateX(-1px); }
-      50% { text-shadow: 0 0 8px rgba(57,255,20,0.6); transform: translateX(1px); }
-      75% { text-shadow: 0 0 14px rgba(0,243,255,1); transform: translateX(-0.5px); }
-      100% { text-shadow: 0 0 10px rgba(0,243,255,0.9); transform: translateX(0); }
+    p.lead {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 1.05rem;
+      margin-bottom: 2rem;
     }
-
-    footer { font-size:0.8rem; color:var(--muted); opacity:0.9 }
-
-    .cookie-banner { position:fixed; bottom:1rem; right:1rem; max-width:420px; padding:1rem 1.3rem; border-radius:16px; background:rgba(24,26,22,0.95); color:#d0c7b3; font-size:0.85rem; border:1px solid rgba(255,255,255,0.12); box-shadow:0 18px 40px rgba(0,0,0,0.6); line-height:1.45; z-index:50 }
-
-    .btn-cookie { padding:.35rem .9rem; border-radius:999px; border:1px solid rgba(255,255,255,0.18); background:transparent; color:#f7f1e3; cursor:pointer; font-size:.8rem }
-    .btn-cookie-primary { background:var(--neon-green); color:#000; border-color:transparent }
-
-    @keyframes heroFadeIn { to { opacity:1; transform:translateY(0) } }
-
-    .status-dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--neon-green); box-shadow:0 0 8px var(--neon-green); margin-right:.5rem; animation:dotPulse 1.5s ease-in-out infinite }
-
-    .terminal-card { margin: 2rem auto 0; background:rgba(20,22,20,0.85); border: 1px solid rgba(0, 243, 255, 0.3); padding:1.5rem; border-radius:4px; box-shadow:0 0 15px rgba(0,243,255,0.05); width:90%; max-width:500px; box-sizing:border-box; font-family:'Courier New', monospace }
-
-    .terminal-header { color:var(--neon-green); font-size:.85rem; letter-spacing:.1em; margin-bottom:1rem; text-transform:uppercase }
-    .terminal-text { color:var(--fg); font-size:1rem; margin-bottom:1rem; line-height:1.5 }
-    .highlight { color:var(--neon-blue); font-weight:700 }
-
-    .btn-neon { display:inline-block; margin-top:1.5rem; padding:1rem 2rem; background:transparent; border:1px solid var(--neon-blue); color:var(--neon-blue); text-shadow:0 0 5px var(--neon-blue); font-weight:700; text-decoration:none; letter-spacing:0.1em; box-shadow:0 0 15px var(--neon-blue); cursor:pointer; transition:all .25s ease }
-    .btn-neon:hover { background:rgba(0, 243, 255, 0.1); color:var(--neon-blue); box-shadow:0 0 25px rgba(0, 243, 255, 0.8) }
-
-    .cursor { display:inline-block; animation:blink 1s step-end infinite }
-    @keyframes blink { 0%, 100% { opacity:1 } 50% { opacity:0 } }
-    
-    /* System manifest readout */
-    .system-manifest {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px dashed rgba(0, 243, 255, 0.2);
-      text-align: left;
-      font-family: 'Courier New', Courier, monospace;
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
     }
-
-    .manifest-header { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.15em; margin-bottom: 0.8rem; opacity: 0.7; }
-
-    .manifest-list { list-style: none; padding: 0; margin: 0; }
-
-    .manifest-list li { display: flex; align-items: baseline; gap: 0.5rem; font-size: 0.75rem; color: var(--fg); margin-bottom: 0.4rem; letter-spacing: 0.05em; opacity: 0.9; }
-
-    .cmd { color: var(--neon-blue); margin-right: 0; font-weight: bold; }
-
-    .manifest-meta { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.12em; margin-top: 0.8rem; opacity: 0.8; }
-
-    .footer-links a { margin-left:1rem; padding: 0.5rem; text-decoration:none; color:inherit }
-    .footer-links a:hover { text-decoration:underline }
-
-    /* Added for inline style replacements */
-    .ls-letter-spacing-3px { letter-spacing: 3px; }
-    .ls-hidden { display: none !important; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    .telemetry-card {
+      background: rgba(3, 7, 18, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.25rem;
     }
-
-    .intelligence-log { width: 100%; max-width: 600px; margin: 1.5rem auto 2.5rem; padding: 0 1rem; box-sizing: border-box; }
-
-    .intelligence-header { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--neon-blue); margin-bottom: 1.5rem; text-align: center; opacity: 0.9; font-weight: 700; }
-
-    .intelligence-entry { background: rgba(20, 22, 20, 0.85); border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 4px; padding: 1.5rem; box-shadow: 0 0 15px rgba(0, 243, 255, 0.05); }
-
-    .entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; gap: 1rem; }
-
-    .entry-title { font-size: 1.1rem; font-weight: 700; color: var(--fg); letter-spacing: 0.05em; margin: 0; }
-
-    .entry-date { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; white-space: nowrap; }
-
-    .entry-body { font-size: 0.95rem; color: var(--fg); line-height: 1.6; margin: 1rem 0; opacity: 0.95; font-family: 'Courier New', monospace; }
-
-    .entry-link { display: inline-block; margin-top: 1rem; padding: 0.6rem 1rem; background: transparent; border: 1px solid var(--neon-blue); color: var(--neon-blue); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 0 10px rgba(0, 243, 255, 0.2); transition: all 0.25s ease; cursor: pointer; }
-
-    .entry-link:hover { background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 20px rgba(0, 243, 255, 0.6); color: var(--neon-green); border-color: var(--neon-green); }
-
-    /* Weekly Intelligence Report - Monday Update Indicator */
-    .monday-indicator { display: block; font-size: 0.7rem; color: var(--neon-green); letter-spacing: 0.1em; margin-top: 1rem; opacity: 0.85; font-weight: 700; text-transform: uppercase; animation: mondayPulse 2s ease-in-out infinite; }
-
-    @keyframes mondayPulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
-
-    /* Modal Overlay */
-    .intelligence-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
-
-    .intelligence-modal-overlay.active { display: flex; }
-
-    /* Modal Box */
-    .intelligence-modal { background: rgba(20, 22, 20, 0.95); border: 1px solid rgba(0, 243, 255, 0.4); border-radius: 4px; padding: 2rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.05); position: relative; }
-
-    .intelligence-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px dashed rgba(0, 243, 255, 0.2); }
-
-    .intelligence-modal-title { font-size: 1rem; font-weight: 700; color: var(--fg); letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
-
-    .intelligence-modal-close { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid rgba(0, 243, 255, 0.3); border-radius: 2px; color: var(--neon-blue); font-size: 1.5rem; cursor: pointer; transition: all 0.25s ease; flex-shrink: 0; }
-
-    .intelligence-modal-close:hover { background: rgba(0, 243, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0, 243, 255, 0.3); }
-
-    .intelligence-modal-content { font-family: 'Courier New', monospace; font-size: 0.9rem; color: var(--fg); line-height: 1.6; opacity: 0.95; }
-
-    .modal-section { margin-bottom: 1.5rem; }
-
-    .modal-section-title { font-size: 0.85rem; color: var(--neon-blue); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.5rem; }
-
-    .modal-section-content { font-size: 0.9rem; color: var(--fg); line-height: 1.7; }
-
-    .modal-header-title { font-size: 0.85rem; color: var(--neon-blue); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 0.8rem; }
-
-    .modal-header-meta { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; opacity: 0.8; }
-
-    .modal-execution-item { margin-bottom: 0.8rem; }
-
-    .modal-execution-label { color: var(--neon-green); font-weight: 700; }
-
-    body.modal-open { overflow: hidden; }
-
-    .modal-header-wrapper { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px dashed rgba(0, 243, 255, 0.2); }
-
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes scaleUp { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-    .intelligence-modal-overlay.active { animation: fadeIn 0.2s ease-out; }
-    .intelligence-modal-overlay.active .intelligence-modal { animation: scaleUp 0.3s ease-out; }
-
-    @media (max-width: 600px) {
-      .intelligence-modal { padding: 1.5rem; margin: 1rem; }
-      .intelligence-modal-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
-      .intelligence-modal-close { align-self: flex-end; margin-top: -1rem; }
+    .telemetry-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
     }
-
-    @media (max-width: 900px) {
-      .intelligence-log { margin: 2rem auto; }
-      .entry-header { flex-direction: column; align-items: flex-start; }
-      .entry-title { font-size: 1rem; }
+    .telemetry-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--amber);
+      font-family: monospace;
     }
+    .telemetry-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    .terminal-box {
+      background: #030712;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+    .highlight { color: var(--cyan); }
+    .footer {
+      border-top: 1px solid var(--border);
+      padding-top: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    a { color: var(--cyan); text-decoration: none; }
   </style>
 </head>
-
 <body>
 
-  <header>
-    <a href="index.html" class="brand">
-      <div class="brand-mark">
-        <img src="assets/lume-space-logo.png" class="brand-logo" alt="Lume Space Logo">
-      </div>
-      <div class="brand-name">Lume Space</div>
-    </a>
-
-    <div class="tag-pill">
-      <span class="tag-dot"></span>
-      <span>SYSTEM STATUS: ONLINE</span>
-    </div>
-  </header>
-
-  <section class="intelligence-log">
-    <h2 class="intelligence-header">LATEST INTELLIGENCE LOG</h2>
-    
-    <article class="intelligence-entry">
-      <div class="entry-header">
-        <h3 class="entry-title">TARGET: SUI/EUR</h3>
-        <span class="entry-date">2026-01-19</span>
-      </div>
-      <p class="entry-body">Market Structure: Cleared Satellite Zone (€1.41). Projection: Approaching Major Resistance €1.55 - €1.58. Status: Active.</p>
-      <button class="entry-link" id="access-risk-map-btn">[ ACCESS FULL RISK MAP ]</button>
-      <span class="monday-indicator">// NEXT INTELLIGENCE DROP: EVERY MONDAY</span>
-    </article>
-  </section>
-
-  <main class="hero">
-    <div class="hero-left">
-      <h1 class="hero-title">Lume Space</h1>
-    </div>
-    <div class="hero-right">
-      <div class="terminal-card">
-        <p class="terminal-text">
-          Institutional Grade Clarity in a Chaos Market.<br>
-          <span class="highlight">> Decrypting Market Structure.</span>
-        </p>
-        
-        <a href="https://whop.com/lume-space" class="btn-neon">
-          ACCESS THE <span class="ls-letter-spacing-3px">EDGE™</span><span class="cursor">_</span>
-        </a>
-      </div>
-    </div>
-  </main>
-
-  <footer>
-    <div>© <span id="year"></span></div>
-    <div class="footer-links">
-      <a href="imprint.html">Imprint</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="cookies.html">Cookies</a>
-    </div>
-  </footer>
-
-  <div class="cookie-banner ls-hidden" id="cookie-banner">
-    <h3>Cookies &amp; Privacy</h3>
-    <p>
-      We use technically necessary storage and — with your consent — optional cookies.
-      Details can be found in our
-      <a href="privacy.html">Privacy Policy</a>.
-    </p>
-    <button class="btn-cookie" id="cookie-reject">Necessary only</button>
-    <button class="btn-cookie btn-cookie-primary" id="cookie-accept">Accept all</button>
+<div class="shell">
+  <div class="header">
+    <div class="brand">⚡ LUME SPACE // CIVIC ENGINE</div>
+    <div class="node-status"><span class="dot"></span> NODE 01: ONLINE (DRESDEN)</div>
   </div>
 
-  <!-- Weekly Intelligence Report Modal -->
-  <div class="intelligence-modal-overlay" id="intelligence-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
-    <div class="intelligence-modal">
-      <div class="intelligence-modal-header">
-        <h2 class="intelligence-modal-title" id="modal-title">Weekly Intelligence Report</h2>
-        <button class="intelligence-modal-close" id="modal-close-btn" aria-label="Close Intelligence Report" title="Close (Esc)">×</button>
-      </div>
-      <div class="intelligence-modal-content">
-        <div class="modal-header-wrapper">
-          <div class="modal-header-title" id="modal-asset">// INTELLIGENCE LOG: SUI/EUR</div>
-          <div class="modal-header-meta" id="modal-meta">DATE: 2026-01-19 | STATUS: ACTIVE | PHASE: SATELLITE CLEARANCE</div>
-        </div>
+  <h1>Hyperlocal Disruption & Urban Telemetry</h1>
+  <p class="lead">
+    Lume Space turns fragmented municipal infrastructure data into real-time geospatial intelligence for residents, cyclists, and regional dispatchers.
+  </p>
 
-        <div class="modal-section">
-          <div class="modal-section-title">Market Structure</div>
-          <div class="modal-section-content" id="modal-structure">
-            The asset has successfully cleared the Satellite Zone (€1.41). This confirms the initial breakout structure. We are now transitioning from the accumulation phase into the 'Golden Corridor.' Volatility is expected to compress before the next expansion leg.
-          </div>
-        </div>
-
-        <div class="modal-section">
-          <div class="modal-section-title">Execution Protocol</div>
-          <div class="modal-section-content" id="modal-execution">
-            <div class="modal-execution-item"><span class="modal-execution-label">Current Trajectory:</span> Approaching Major Resistance.</div>
-            <div class="modal-execution-item"><span class="modal-execution-label">Target Zone (Medium-Term):</span> €1.55 – €1.58.</div>
-            <div class="modal-execution-item"><span class="modal-execution-label">Invalidation Level (Hard Stop):</span> Daily close below €1.35.</div>
-            <div class="modal-execution-item"><span class="modal-execution-label">Action:</span> HOLD. Do not compound yet. Allow the trend to establish support above €1.41.</div>
-          </div>
-        </div>
-
-        <div class="modal-section">
-          <div class="modal-section-title">The Lume Edge (Mindset)</div>
-          <div class="modal-section-content" id="modal-mindset">
-            The amateur sells at the first sign of profit. The professional waits for the target. We do not trade the noise; we trade the structure. Patience is the only edge that cannot be automated.
-          </div>
-        </div>
-      </div>
+  <div class="telemetry-grid">
+    <div class="telemetry-card">
+      <div class="telemetry-title">River Elbe // Augustusbrücke</div>
+      <div class="telemetry-value" id="elbe-level">63 cm</div>
+      <div class="telemetry-sub">Status: Low Water Level (Normal Navigation)</div>
+    </div>
+    <div class="telemetry-card">
+      <div class="telemetry-title">Municipal Permits Active</div>
+      <div class="telemetry-value" style="color: var(--cyan);">34</div>
+      <div class="telemetry-sub">Roadworks & Detours (Dresden Mitte)</div>
+    </div>
+    <div class="telemetry-card">
+      <div class="telemetry-title">Severe Weather Trigger</div>
+      <div class="telemetry-value" style="color: var(--green);">NONE</div>
+      <div class="telemetry-sub">DWD Early Alert Feed Active</div>
     </div>
   </div>
 
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
+  <div class="terminal-box">
+    <div><span class="highlight">root@lume-space:~$</span> systemctl status spatial-engine</div>
+    <div>● engine.service - Dresden Geospatial Alert Dispatcher</div>
+    <div>   Loaded: active (running) | PostGIS: 127.0.0.1:5432</div>
+    <div>   Coverage: 01067, 01097, 01099, 01159 (Dresden Urban Core)</div>
+  </div>
 
-    const COOKIE_KEY = "lume_cookie_consent";
-
-    function handleConsent(v) {
-      localStorage.setItem(COOKIE_KEY, v);
-      document.getElementById("cookie-banner").style.display = "none";
-    }
-
-    (function () {
-      const saved = localStorage.getItem(COOKIE_KEY);
-      if (!saved) document.getElementById("cookie-banner").style.display = "block";
-      document.getElementById("cookie-accept").onclick = () => handleConsent("accepted");
-      document.getElementById("cookie-reject").onclick = () => handleConsent("rejected");
-    })();
-
-    // Weekly Intelligence Report Modal
-    const modalOverlay = document.getElementById("intelligence-modal-overlay");
-    const modalCloseBtn = document.getElementById("modal-close-btn");
-    const accessRiskMapBtn = document.getElementById("access-risk-map-btn");
-    const mondayIndicator = document.querySelector(".monday-indicator");
-
-    // Update day-of-week indicator to show next Monday date
-    function updateMondayIndicator() {
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      const daysUntilMonday = (1 - dayOfWeek + 7) % 7 || 7;
-      const nextMonday = new Date(today);
-      nextMonday.setDate(today.getDate() + daysUntilMonday);
-      const mondayStr = nextMonday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      mondayIndicator.textContent = `// NEXT INTELLIGENCE DROP: ${mondayStr.toUpperCase()}`;
-    }
-    updateMondayIndicator();
-
-    // Modal control functions
-    function openModal() {
-      modalOverlay.classList.add("active");
-      modalOverlay.setAttribute("aria-hidden", "false");
-      document.body.classList.add("modal-open");
-      // Focus first focusable element
-      const focusableElements = modalOverlay.querySelectorAll('button, [href], input, select, textarea');
-      if (focusableElements.length > 0) focusableElements[0].focus();
-    }
-
-    function closeModal() {
-      modalOverlay.classList.remove("active");
-      modalOverlay.setAttribute("aria-hidden", "true");
-      document.body.classList.remove("modal-open");
-      accessRiskMapBtn.focus();
-    }
-
-    // Open modal on button click
-    accessRiskMapBtn.addEventListener("click", openModal);
-
-    // Close modal on X button click
-    modalCloseBtn.addEventListener("click", closeModal);
-
-    // Close modal on background overlay click
-    modalOverlay.addEventListener("click", function(e) {
-      if (e.target === modalOverlay) closeModal();
-    });
-
-    // Keyboard navigation for modal
-    document.addEventListener("keydown", function(e) {
-      if (!modalOverlay.classList.contains("active")) return;
-
-      // Close on Escape
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeModal();
-      }
-
-      // Trap Tab focus within modal
-      if (e.key === "Tab") {
-        const focusableElements = modalOverlay.querySelectorAll('button, [href], input, select, textarea');
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-        
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement.focus();
-          }
-        }
-      }
-    });
-  </script>
+  <div class="footer">
+    <span>Lume Space • Open Data Engineering</span>
+    <span><a href="/impressum.html">Legal Impressum</a></span>
+  </div>
+</div>
 
 </body>
 </html>
