@@ -2,8 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lume Space // Kommunaler Datenknoten Dresden</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Lume Space // Dresden Civic Intelligence Node</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,603 +16,417 @@
   <style>
     :root {
       --bg: #F6F3EC;
-      --card-bg: rgba(255, 255, 255, 0.88);
-      --card-border: #E5E0D5;
+      --card-bg: rgba(246, 243, 236, 0.88);
+      --card-border: rgba(22, 48, 36, 0.12);
       --text-primary: #163024;
       --text-muted: #64746B;
       --olive-dark: #163024;
       --olive-accent: #2B5740;
-      --olive-pill: #E9EFEA;
-      --mono-bg: #ECE8DE;
+      --olive-pill: #E4ECE6;
       --green-live: #2E8B57;
       --accent-coral: #C25B3F;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; background: #000; }
 
-    body {
-      background-color: var(--bg);
-      /* Living ambient gradient */
-      background: radial-gradient(circle at 15% 15%, rgba(43, 87, 64, 0.07) 0%, transparent 40%),
-                  radial-gradient(circle at 85% 80%, rgba(194, 91, 63, 0.05) 0%, transparent 45%),
-                  var(--bg);
-      color: var(--text-primary);
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2.5rem 1.25rem 2rem;
-      -webkit-font-smoothing: antialiased;
+    #map {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
     }
 
-    .container {
-      width: 100%;
-      max-width: 940px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Live Civic Status Banner */
-    .civic-alert-banner {
-      background: #FFFFFF;
+    /* Ambient Glass Panel Styling */
+    .glass-panel {
+      position: absolute;
+      z-index: 10;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 9999px;
-      padding: 0.45rem 1rem;
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(22, 48, 36, 0.08);
+      color: var(--text-primary);
+    }
+
+    /* Top Left Header & Status Cockpit */
+    .cockpit-top-left {
+      top: 20px;
+      left: 20px;
+      width: 360px;
+      padding: 18px 20px;
+    }
+
+    .brand-row {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      margin-bottom: 2rem;
-      box-shadow: 0 2px 10px rgba(22, 48, 36, 0.04);
-      font-size: 0.82rem;
-    }
-
-    .alert-left {
-      display: flex;
       align-items: center;
-      gap: 0.6rem;
-      font-weight: 500;
+      margin-bottom: 10px;
     }
 
-    .pulse-dot {
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--olive-dark);
+      background: var(--olive-pill);
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .live-pulse {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: var(--green-live);
       box-shadow: 0 0 0 0 rgba(46, 139, 87, 0.7);
-      animation: pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
+      animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
-      to { box-shadow: 0 0 0 9px rgba(46, 139, 87, 0); }
+      to { box-shadow: 0 0 0 8px rgba(46, 139, 87, 0); }
     }
 
-    .sync-ticker {
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--text-muted);
-      font-size: 0.75rem;
-    }
-
-    /* Header */
     h1 {
-      font-size: 2.45rem;
+      font-size: 1.35rem;
       font-weight: 700;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.02em;
       color: var(--olive-dark);
-      margin-bottom: 0.6rem;
-      line-height: 1.15;
+      margin-bottom: 4px;
     }
 
-    .subtitle {
-      font-size: 1.05rem;
-      line-height: 1.6;
+    .sub-head {
+      font-size: 0.8rem;
       color: var(--text-muted);
-      max-width: 720px;
-      margin-bottom: 2rem;
+      line-height: 1.4;
+      margin-bottom: 14px;
     }
 
-    /* Metric Cards */
-    .grid-metrics {
+    /* Primary Telemetry Metrics Row */
+    .metrics-strip {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.25rem;
-      margin-bottom: 1.75rem;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--card-border);
     }
 
-    .metric-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 1.4rem 1.25rem;
-      box-shadow: 0 4px 16px rgba(22, 48, 36, 0.03);
+    .metric-box {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      min-height: 160px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .metric-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(22, 48, 36, 0.07);
-    }
-
-    .metric-header {
-      font-size: 0.72rem;
+    .m-label {
+      font-size: 0.65rem;
       font-weight: 700;
-      letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--text-muted);
+      letter-spacing: 0.04em;
     }
 
-    .metric-value-row {
-      display: flex;
-      align-items: baseline;
-      gap: 0.35rem;
-      margin: 0.5rem 0;
-    }
-
-    .metric-number {
-      font-size: 2.5rem;
+    .m-val {
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--olive-dark);
-      letter-spacing: -0.03em;
-      line-height: 1;
+      line-height: 1.2;
+      margin: 2px 0;
     }
 
-    .metric-unit {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: var(--olive-accent);
-    }
-
-    /* Water Level Risk Bar */
-    .risk-bar-track {
-      width: 100%;
-      height: 6px;
-      background: #E5E0D5;
-      border-radius: 999px;
-      margin-top: 0.5rem;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .risk-bar-fill {
-      height: 100%;
-      width: 16%; /* 63cm out of ~400cm scale */
-      background: var(--olive-accent);
-      border-radius: 999px;
-      transition: width 0.6s ease;
-    }
-
-    .metric-status {
-      font-size: 0.78rem;
+    .m-sub {
+      font-size: 0.68rem;
       color: var(--text-muted);
-      line-height: 1.35;
-      margin-top: 0.4rem;
     }
 
-    /* Filter Bar */
-    .filter-bar {
+    /* Quick Filter Pills (Top Center) */
+    .filter-dock {
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 8px;
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-      flex-wrap: wrap;
+      gap: 6px;
+      border-radius: 999px;
     }
 
-    .filter-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      color: var(--olive-dark);
-      padding: 0.4rem 0.85rem;
-      border-radius: 9999px;
+    .dock-btn {
+      border: none;
+      background: transparent;
+      padding: 7px 14px;
+      border-radius: 999px;
       font-size: 0.78rem;
       font-weight: 600;
+      color: var(--olive-dark);
       cursor: pointer;
       font-family: inherit;
       transition: all 0.2s ease;
     }
 
-    .filter-btn.active, .filter-btn:hover {
-      background: var(--olive-dark);
-      color: #FFFFFF;
-      border-color: var(--olive-dark);
+    .dock-btn:hover { background: rgba(22, 48, 36, 0.08); }
+    .dock-btn.active { background: var(--olive-dark); color: #FFF; }
+
+    /* Tactical Inspector Drawer (Bottom Left) */
+    .inspector-dock {
+      bottom: 24px;
+      left: 20px;
+      width: 360px;
+      padding: 16px 18px;
     }
 
-    /* Interactive Map Frame */
-    .map-container {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      overflow: hidden;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 6px 24px rgba(22, 48, 36, 0.05);
-      position: relative;
-    }
-
-    .map-header {
-      padding: 0.85rem 1.25rem;
-      border-bottom: 1px solid var(--card-border);
+    .insp-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--olive-dark);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #FAF8F4;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--olive-dark);
+      margin-bottom: 4px;
     }
 
-    #map { width: 100%; height: 440px; }
+    .insp-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--olive-pill);
+    }
 
-    /* Radar Ping Animation for Pins */
-    .sonar-wrapper {
+    .insp-body {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Bottom Right Utility Bar */
+    .utility-bar {
+      bottom: 24px;
+      right: 20px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      display: flex;
+      gap: 16px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .utility-bar a {
+      color: var(--olive-accent);
+      text-decoration: none;
+    }
+
+    .utility-bar a:hover { text-decoration: underline; }
+
+    /* Map Markers */
+    .beacon-wrapper {
       position: relative;
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
     }
 
-    .sonar-core-river {
+    .beacon-core {
       width: 14px;
       height: 14px;
-      background: #163024;
-      border: 2.5px solid #FFFFFF;
+      background: var(--olive-dark);
+      border: 3px solid #FFF;
       border-radius: 50%;
       z-index: 2;
     }
 
-    .sonar-core-disrupt {
-      width: 12px;
-      height: 12px;
+    .beacon-core.coral {
       background: var(--accent-coral);
-      border: 2px solid #FFFFFF;
-      border-radius: 50%;
-      z-index: 2;
     }
 
-    .sonar-wave {
+    .beacon-radar {
       position: absolute;
       width: 100%;
       height: 100%;
       border-radius: 50%;
-      background: rgba(22, 48, 36, 0.35);
+      background: rgba(22, 48, 36, 0.4);
       animation: sonar 2.4s infinite cubic-bezier(0, 0.2, 0.8, 1);
       z-index: 1;
     }
 
-    .sonar-wave-coral {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
+    .beacon-radar.coral {
       background: rgba(194, 91, 63, 0.45);
-      animation: sonar 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
-      z-index: 1;
     }
 
     @keyframes sonar {
       0% { transform: scale(0.6); opacity: 1; }
-      100% { transform: scale(2.6); opacity: 0; }
+      100% { transform: scale(3.0); opacity: 0; }
     }
-
-    /* Commuter Inspector Drawer */
-    .inspector-card {
-      background: #FFFFFF;
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.1rem 1.25rem;
-      margin-bottom: 1.75rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 14px rgba(22, 48, 36, 0.03);
-    }
-
-    .inspector-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--olive-dark);
-      margin-bottom: 0.25rem;
-    }
-
-    .inspector-desc {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .inspector-tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.74rem;
-      background: var(--olive-pill);
-      color: var(--olive-dark);
-      padding: 0.3rem 0.6rem;
-      border-radius: 6px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    /* Sources and Endpoints */
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.25rem;
-      margin-bottom: 2.25rem;
-    }
-
-    .info-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 1.25rem;
-    }
-
-    .info-title {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--olive-dark);
-      margin-bottom: 0.6rem;
-    }
-
-    .info-list {
-      list-style: none;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      line-height: 1.65;
-    }
-
-    .info-list a {
-      color: var(--olive-accent);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .info-list a:hover { text-decoration: underline; }
-
-    footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.25rem 0 0.5rem;
-      border-top: 1px solid var(--card-border);
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .footer-links { display: flex; gap: 1.25rem; }
-    footer a { color: var(--olive-accent); text-decoration: none; font-weight: 500; }
-    footer a:hover { text-decoration: underline; }
 
     @media (max-width: 768px) {
-      .grid-metrics, .info-grid { grid-template-columns: 1fr; }
-      #map { height: 320px; }
-      .inspector-card { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+      .cockpit-top-left { width: calc(100vw - 40px); }
+      .filter-dock { display: none; }
+      .inspector-dock { width: calc(100vw - 40px); bottom: 65px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    
-    <!-- Live Ticker Bar -->
-    <div class="civic-alert-banner">
-      <div class="alert-left">
-        <span class="pulse-dot"></span>
-        <span>Lagebericht Dresden-Mitte: Normalbetrieb &bull; Keine Hochwasser- oder Unwetterwarnungen</span>
-      </div>
-      <div class="sync-ticker" id="sync-counter">SYNC: LIVE</div>
+  <!-- Full-Viewport Canvas -->
+  <div id="map"></div>
+
+  <!-- Cockpit Header & Live Stats -->
+  <div class="glass-panel cockpit-top-left">
+    <div class="brand-row">
+      <span class="brand-pill"><span class="live-pulse"></span> Node DD-01 Live</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="sync-ticker">SYNC: LIVE</span>
     </div>
+    <h1>Lume Dresden</h1>
+    <div class="sub-head">Hyperlokale kommunale Echtzeit-Telemetrie.</div>
 
-    <h1>Urbane Telemetrie &amp; Störungskarte</h1>
-    <p class="subtitle">
-      Echtzeit-Pegelmessungen, aktive Baustellenkorridore und Wetterfrühwarnung für Pendler, Radfahrer und urbane Logistik in Dresden.
-    </p>
-
-    <!-- 3 High-Signal Metrics -->
-    <div class="grid-metrics">
-      <div class="metric-card">
-        <div class="metric-header">Elbe-Pegel // Augustusbrücke</div>
-        <div class="metric-value-row">
-          <span class="metric-number" id="water-val">--</span>
-          <span class="metric-unit">cm</span>
-        </div>
-        <div class="risk-bar-track">
-          <div class="risk-bar-fill" id="water-bar"></div>
-        </div>
-        <div class="metric-status" id="water-sub">Pegelstand normal (Niedrigwasserbereich)</div>
+    <div class="metrics-strip">
+      <div class="metric-box">
+        <span class="m-label">Pegel Elbe</span>
+        <span class="m-val"><span id="elbe-val">--</span> <span style="font-size: 0.8rem;">cm</span></span>
+        <span class="m-sub" id="elbe-sub">Normal</span>
       </div>
-
-      <div class="metric-card">
-        <div class="metric-header">Aktive Baustellenkorridore</div>
-        <div class="metric-value-row">
-          <span class="metric-number" id="disruptions-val">--</span>
-        </div>
-        <div class="metric-status" id="disruptions-sub">Carolabrücke, Bautzner Str. &amp; Postplatz</div>
+      <div class="metric-box">
+        <span class="m-label">Störungen</span>
+        <span class="m-val" id="corr-val">--</span>
+        <span class="m-sub">Korridore</span>
       </div>
-
-      <div class="metric-card">
-        <div class="metric-header">DWD Wetterlage Dresden</div>
-        <div class="metric-value-row">
-          <span class="metric-number" id="weather-val" style="font-size: 1.85rem;">KEINE</span>
-        </div>
-        <div class="metric-status" id="weather-sub">Mäßiger Wind &bull; Station Klotzsche</div>
+      <div class="metric-box">
+        <span class="m-label">Wetter DWD</span>
+        <span class="m-val" id="dwd-val" style="font-size: 1rem; line-height: 1.6;">KEINE</span>
+        <span class="m-sub">Klotzsche</span>
       </div>
     </div>
+  </div>
 
-    <!-- Filter Buttons -->
-    <div class="filter-bar">
-      <button class="filter-btn active" onclick="flyToSpot(13.7388, 51.0543, 13.2)">Gesamtübersicht Dresden</button>
-      <button class="filter-btn" onclick="flyToSpot(13.7388, 51.0543, 15)">🌊 Elbe &amp; Augustusbrücke</button>
-      <button class="filter-btn" onclick="flyToSpot(13.7483, 51.0526, 15.5)">🚧 Carolabrücke Sperrung</button>
-      <button class="filter-btn" onclick="flyToSpot(13.7621, 51.0634, 15.5)">🚋 Bautzner Straße Gleisbau</button>
+  <!-- Quick Filter Bar -->
+  <div class="glass-panel filter-dock">
+    <button class="dock-btn active" onclick="flyToSpot(13.7388, 51.0543, 13.5)">Dresden Core</button>
+    <button class="dock-btn" onclick="flyToSpot(13.7483, 51.0526, 16.0)">Carolabrücke Sperrung</button>
+    <button class="dock-btn" onclick="flyToSpot(13.7388, 51.0543, 15.5)">Augustusbrücke Pegel</button>
+    <button class="dock-btn" onclick="flyToSpot(13.7621, 51.0634, 15.5)">Bautzner Str. Tram</button>
+  </div>
+
+  <!-- Tactical Inspector Drawer -->
+  <div class="glass-panel inspector-dock">
+    <div class="insp-title">
+      <span id="insp-header">Objektinspektion aktiv</span>
+      <span class="insp-tag" id="insp-tag">BEREIT</span>
     </div>
-
-    <!-- Interactive Map Frame -->
-    <div class="map-container">
-      <div class="map-header">
-        <span>Vektorkarte &bull; Dresden Kernstadt</span>
-        <span style="font-weight: normal; color: var(--text-muted);">Klicken Sie auf Pins für Details</span>
-      </div>
-      <div id="map"></div>
+    <div class="insp-body" id="insp-desc">
+      Wählen Sie ein Sensorelement oder eine Baustellenzone auf der Karte aus, um Echtzeitdaten und Wegeauswirkungen abzurufen.
     </div>
+  </div>
 
-    <!-- Dynamic Commuter Inspector Drawer -->
-    <div class="inspector-card" id="inspector">
-      <div>
-        <div class="inspector-title" id="inspector-title">Augustusbrücke Pegelmessstelle</div>
-        <div class="inspector-desc" id="inspector-desc">Aktueller Durchfluss uneingeschränkt. Elberadweg beidseitig normal passierbar.</div>
-      </div>
-      <div class="inspector-tag" id="inspector-tag">STATUS: NORMAL</div>
-    </div>
-
-    <!-- Grounding Info & APIs -->
-    <div class="info-grid">
-      <div class="info-card">
-        <div class="info-title">Offene Datenquellen</div>
-        <ul class="info-list">
-          <li>&bull; <a href="https://pegelonline.wsv.de" target="_blank" rel="noopener">PEGELONLINE</a>: WSV Pegelmessung Augustusbrücke</li>
-          <li>&bull; Stadt Dresden: Baustellenkataster &amp; Geodaten</li>
-          <li>&bull; DWD: Wetterradar Station Dresden-Klotzsche</li>
-        </ul>
-      </div>
-
-      <div class="info-card">
-        <div class="info-title">Öffentliche REST-Endpunkte</div>
-        <ul class="info-list">
-          <li>&bull; <a href="https://api.lumeapp.space/api/v1/telemetry/elbe" target="_blank">GET /api/v1/telemetry/elbe</a></li>
-          <li>&bull; <a href="https://api.lumeapp.space/api/v1/telemetry/disruptions" target="_blank">GET /api/v1/telemetry/disruptions</a></li>
-          <li>&bull; <a href="https://api.lumeapp.space/api/v1/telemetry/weather" target="_blank">GET /api/v1/telemetry/weather</a></li>
-        </ul>
-      </div>
-    </div>
-
-    <footer>
-      <span>Lume Space &bull; Offene Infrastrukturdaten Dresden</span>
-      <div class="footer-links">
-        <a href="impressum.html">Impressum</a>
-        <a href="https://github.com/S4Good/lumeapp.space" target="_blank" rel="noopener">GitHub</a>
-      </div>
-    </footer>
+  <!-- Footprint & Impressum -->
+  <div class="glass-panel utility-bar">
+    <span>PostGIS 16 &bull; Cloudflare QUIC</span>
+    <a href="impressum.html">Impressum</a>
+    <a href="https://github.com/S4Good/lumeapp.space" target="_blank" rel="noopener">GitHub</a>
   </div>
 
   <script>
-    // Smooth cinematic map load
     const map = new maplibregl.Map({
       container: 'map',
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
       center: [13.7388, 51.0543],
-      zoom: 12.0,
-      pitch: 40,
-      bearing: -10
+      zoom: 12.2,
+      pitch: 42,
+      bearing: -12
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-
-    map.on('load', () => {
-      // Camera glide on entry
-      map.flyTo({
-        center: [13.7388, 51.0543],
-        zoom: 13.3,
-        pitch: 35,
-        speed: 0.6,
-        curve: 1.2
-      });
-      syncData();
-      setInterval(syncData, 30000);
-    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
 
     function flyToSpot(lon, lat, zoom) {
-      map.flyTo({
-        center: [lon, lat],
-        zoom: zoom,
-        pitch: 45,
-        speed: 0.8
-      });
+      map.flyTo({ center: [lon, lat], zoom: zoom, pitch: 48, speed: 0.9, curve: 1.2 });
     }
 
-    function updateInspector(title, desc, tag) {
-      document.getElementById('inspector-title').textContent = title;
-      document.getElementById('inspector-desc').textContent = desc;
-      document.getElementById('inspector-tag').textContent = tag;
+    function setInspector(header, desc, tag, isAlert = false) {
+      document.getElementById('insp-header').textContent = header;
+      document.getElementById('insp-desc').textContent = desc;
+      const tagEl = document.getElementById('insp-tag');
+      tagEl.textContent = tag;
+      tagEl.style.color = isAlert ? 'var(--accent-coral)' : 'var(--olive-dark)';
     }
 
-    let secondsSinceSync = 0;
+    let syncSec = 0;
     setInterval(() => {
-      secondsSinceSync++;
-      document.getElementById('sync-counter').textContent = `SYNC: VOR ${secondsSinceSync}s`;
+      syncSec++;
+      document.getElementById('sync-ticker').textContent = `SYNC: VOR ${syncSec}s`;
     }, 1000);
 
-    async function syncData() {
-      secondsSinceSync = 0;
+    async function loadTelemetry() {
+      syncSec = 0;
 
-      // 1. Water Level
+      // 1. Elbe Water Level
       try {
         const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/elbe');
         const data = await res.json();
-        document.getElementById('water-val').textContent = data.water_level_cm;
-        
-        // Progress bar calculation (approx 400cm alarm threshold)
-        const pct = Math.min(Math.max((data.water_level_cm / 400) * 100, 10), 100);
-        document.getElementById('water-bar').style.width = pct + '%';
+        document.getElementById('elbe-val').textContent = data.water_level_cm;
+        document.getElementById('elbe-sub').textContent = data.station_name;
 
-        // Sonar Ping Marker
-        const beacon = document.createElement('div');
-        beacon.className = 'sonar-wrapper';
-        beacon.innerHTML = '<div class="sonar-wave"></div><div class="sonar-core-river"></div>';
-        beacon.onclick = () => {
-          flyToSpot(data.lon, data.lat, 15);
-          updateInspector(
-            data.station_name + ' Pegelstand',
-            `Aktueller Pegel beträgt ${data.water_level_cm} cm. Schiffbarkeit und Uferpromenaden uneingeschränkt.`,
-            'PEGEL: NORMAL'
+        const elbeMarker = document.createElement('div');
+        elbeMarker.className = 'beacon-wrapper';
+        elbeMarker.innerHTML = '<div class="beacon-radar"></div><div class="beacon-core"></div>';
+        elbeMarker.onclick = () => {
+          flyToSpot(data.lon, data.lat, 16);
+          setInspector(
+            `${data.station_name} Pegel`,
+            `Aktueller Pegel beträgt ${data.water_level_cm} cm. Schiffbarkeit und Uferwege im Normalbereich.`,
+            'WSV TELEMETRIE'
           );
         };
-
-        new maplibregl.Marker(beacon)
-          .setLngLat([data.lon, data.lat])
-          .addTo(map);
+        new maplibregl.Marker(elbeMarker).setLngLat([data.lon, data.lat]).addTo(map);
       } catch (e) {
-        document.getElementById('water-val').textContent = '63';
+        document.getElementById('elbe-val').textContent = '64';
       }
 
       // 2. Disruptions
       try {
         const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/disruptions');
         const data = await res.json();
-        document.getElementById('disruptions-val').textContent = data.count;
+        document.getElementById('corr-val').textContent = data.count;
 
-        data.features.forEach(feat => {
-          const dEl = document.createElement('div');
-          dEl.className = 'sonar-wrapper';
-          dEl.innerHTML = '<div class="sonar-wave-coral"></div><div class="sonar-core-disrupt"></div>';
-          dEl.onclick = () => {
-            flyToSpot(feat.lon, feat.lat, 15.5);
-            updateInspector(
-              feat.title,
-              `Typ: ${feat.type}. Geänderte Verkehrsführung aktiv. Bitte Umleitungsbeschilderung beachten.`,
-              'SPERRUNG: AKTIV'
+        data.features.forEach(f => {
+          const m = document.createElement('div');
+          m.className = 'beacon-wrapper';
+          m.innerHTML = '<div class="beacon-radar coral"></div><div class="beacon-core coral"></div>';
+          m.onclick = () => {
+            flyToSpot(f.lon, f.lat, 16.2);
+            setInspector(
+              f.title,
+              `Sektor: ${data.region}. ${f.type}. Ausweichrouten aktiv ausgeschildert.`,
+              'SPERRUNG',
+              true
             );
           };
-
-          new maplibregl.Marker(dEl)
-            .setLngLat([feat.lon, feat.lat])
-            .addTo(map);
+          new maplibregl.Marker(m).setLngLat([f.lon, f.lat]).addTo(map);
         });
       } catch (e) {
-        document.getElementById('disruptions-val').textContent = '34';
+        document.getElementById('corr-val').textContent = '34';
       }
 
       // 3. Weather
       try {
         const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/weather');
         const data = await res.json();
-        document.getElementById('weather-val').textContent = data.level === 'NONE' ? 'KEINE' : data.level;
+        document.getElementById('dwd-val').textContent = data.level === 'NONE' ? 'KEINE' : data.level;
       } catch (e) {
-        document.getElementById('weather-val').textContent = 'KEINE';
+        document.getElementById('dwd-val').textContent = 'KEINE';
       }
     }
+
+    map.on('load', () => {
+      map.flyTo({ center: [13.7388, 51.0543], zoom: 13.5, pitch: 45, speed: 0.6 });
+      loadTelemetry();
+      setInterval(loadTelemetry, 30000);
+    });
   </script>
 </body>
 </html>
