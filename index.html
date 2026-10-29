@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Lume Space // Dresden Civic Intelligence Node</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  
+
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
@@ -248,11 +248,11 @@
 
   <div class="glass-panel cockpit-top-left">
     <div class="brand-row">
-      <span class="brand-pill"><span class="live-pulse"></span> Node DD-01 Live</span>
-      <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="sync-ticker">SYNC: LIVE</span>
+      <span class="brand-pill" id="feed-status">Daten werden geladen</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="sync-ticker">ABRUF AUSSTEHEND</span>
     </div>
     <h1>Lume Dresden</h1>
-    <div class="sub-head">Hyperlokale kommunale Echtzeit-Telemetrie.</div>
+    <div class="sub-head">Dresdner Stadtdaten mit Quelle und Messzeit.</div>
 
     <div class="metrics-strip">
       <div class="metric-box">
@@ -263,203 +263,229 @@
       <div class="metric-box">
         <span class="m-label">Störungen</span>
         <span class="m-val" id="corr-val">--</span>
-        <span class="m-sub">Korridore</span>
+        <span class="m-sub">Noch nicht angebunden</span>
       </div>
       <div class="metric-box">
-        <span class="m-label">Wetter DWD</span>
-        <span class="m-val" id="dwd-val" style="font-size: 0.95rem; line-height: 1.6;">KEINE</span>
-        <span class="m-sub">Klotzsche</span>
+        <span class="m-label">Wetterwarnungen</span>
+        <span class="m-val" id="dwd-val" style="font-size: 0.95rem; line-height: 1.6;">--</span>
+        <span class="m-sub">Noch nicht angebunden</span>
       </div>
     </div>
   </div>
 
   <div class="glass-panel filter-dock">
-    <button class="dock-btn active" onclick="flyToSpot(13.7388, 51.0543, 13.5)">Dresden Core</button>
-    <button class="dock-btn" onclick="focusCorridor('carola')">🚧 Carolabrücke Sperrung</button>
-    <button class="dock-btn" onclick="focusCorridor('elbe')">🌊 Elbe &amp; Uferradwege</button>
-    <button class="dock-btn" onclick="focusCorridor('bautzner')">🚋 Bautzner Str. Tram</button>
-  </div>
+      <button class="dock-btn active"
+              onclick="flyToSpot(13.7388, 51.0543, 14)">
+        Elbe · Dresden
+      </button>
+    </div>
 
   <div class="glass-panel inspector-dock">
     <div class="insp-title">
-      <span id="insp-header">Carolabrücke Sperrzone</span>
-      <span class="insp-tag" id="insp-tag" style="color: var(--accent-coral);">VOLLSPERRUNG</span>
+      <span id="insp-header">Elbe · Pegel Dresden</span>
+      <span class="insp-tag" id="insp-tag" style="color: var(--accent-coral);">LÄDT</span>
     </div>
     <div class="insp-body" id="insp-desc">
-      Einsturzbereich Zug C gesperrt. Rad- und Fußverkehr wird über die Augustusbrücke (grüne Route) umgeleitet. Kfz nutzen die Albertbrücke.
+      Offizieller Messwert wird geladen.
     </div>
   </div>
 
   <div class="glass-panel utility-bar">
-    <span>PostGIS 16 &bull; Cloudflare QUIC</span>
+    <a href="https://pegelonline.wsv.de/" target="_blank" rel="noopener">Quelle: PEGELONLINE / WSV</a>
     <a href="impressum.html">Impressum</a>
     <a href="https://github.com/S4Good/lumeapp.space" target="_blank" rel="noopener">GitHub</a>
   </div>
 
-  <script>
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-      center: [13.7430, 51.0535],
-      zoom: 13.8,
+
+<script>
+const API = "https://api.lumeapp.space/api/v1/telemetry/elbe";
+const REFRESH_MS = 60000;
+
+let map = null;
+let marker = null;
+let latest = null;
+let lastSuccess = null;
+let requestFailed = false;
+
+const element = id => document.getElementById(id);
+
+function flyToSpot(lon, lat, zoom) {
+  if (map) {
+    map.flyTo({
+      center: [lon, lat],
+      zoom,
       pitch: 45,
-      bearing: -15
+      speed: 0.8
+    });
+  }
+}
+
+function showDetails(title, description, tag) {
+  element("insp-header").textContent = title;
+  element("insp-desc").textContent = description;
+  element("insp-tag").textContent = tag;
+}
+
+function formatTime(value) {
+  return new Intl.DateTimeFormat("de-DE", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Europe/Berlin"
+  }).format(new Date(value));
+}
+
+function renderStatus() {
+  const badge = element("feed-status");
+
+  if (!latest) {
+    badge.textContent = requestFailed
+      ? "Elbe: Daten nicht verfügbar"
+      : "Daten werden geladen";
+    badge.style.color = "#64746B";
+    return;
+  }
+
+  const age = Math.max(
+    0, (Date.now() - Date.parse(latest.measured_at)) / 1000
+  );
+  const stale = age > 3600 || latest.status !== "ok";
+
+  badge.textContent = requestFailed
+    ? "Elbe: Abruf fehlgeschlagen"
+    : stale ? "Elbe: Messwert veraltet" : "Elbe: Messwert aktuell";
+
+  badge.style.color = requestFailed || stale ? "#C25B3F" : "#2E8B57";
+
+  element("elbe-sub").textContent =
+    "Messung: " + formatTime(latest.measured_at) + " · Berlin";
+
+  if (lastSuccess) {
+    const seconds = Math.max(
+      0, Math.floor((Date.now() - lastSuccess) / 1000)
+    );
+    element("sync-ticker").textContent =
+      "API-ABRUF: VOR " + seconds + "s";
+  }
+
+  const prefix = requestFailed
+    ? "Letzter verfügbarer Messwert. Erneuter Abruf fehlgeschlagen. "
+    : "";
+
+  showDetails(
+    "Elbe · Pegel Dresden",
+    prefix +
+      "Wasserstand: " + latest.water_level_cm + " cm. " +
+      "Gemessen: " + formatTime(latest.measured_at) + ". " +
+      "Vom HomeLab abgerufen: " + formatTime(latest.fetched_at) + ". " +
+      "Zeiten: Europe/Berlin. Quelle: PEGELONLINE / WSV. " +
+      "Der Pegelwert bestätigt keine Befahrbarkeit von Uferwegen.",
+    requestFailed ? "ABRUFFEHLER" : stale ? "VERALTET" : "MESSWERT"
+  );
+}
+
+async function refreshElbe() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const response = await fetch(API, {
+      signal: controller.signal,
+      cache: "no-store"
     });
 
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-
-    function flyToSpot(lon, lat, zoom) {
-      map.flyTo({ center: [lon, lat], zoom: zoom, pitch: 48, speed: 0.8, curve: 1.2 });
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
     }
 
-    function setInspector(header, desc, tag, isAlert = false) {
-      document.getElementById('insp-header').textContent = header;
-      document.getElementById('insp-desc').textContent = desc;
-      const tagEl = document.getElementById('insp-tag');
-      tagEl.textContent = tag;
-      tagEl.style.color = isAlert ? 'var(--accent-coral)' : 'var(--olive-dark)';
+    const data = await response.json();
+    const validCoordinates =
+      Number.isFinite(data.lon) && Math.abs(data.lon) <= 180 &&
+      Number.isFinite(data.lat) && Math.abs(data.lat) <= 90;
+
+    if (
+      data.station_name !== "DRESDEN" ||
+      data.unit !== "cm" ||
+      !Number.isFinite(data.water_level_cm) ||
+      !Number.isFinite(Date.parse(data.measured_at)) ||
+      !Number.isFinite(Date.parse(data.fetched_at)) ||
+      !validCoordinates ||
+      !["ok", "stale"].includes(data.status)
+    ) {
+      throw new Error("Invalid measurement response");
     }
 
-    function focusCorridor(type) {
-      if (type === 'carola') {
-        flyToSpot(13.7500, 51.0530, 16.0);
-        setInspector(
-          'Carolabrücke Brückenzug C (Sperrung)',
-          'Gefahrenzone gesperrt. Umleitung über Augustusbrücke (Fuß/Rad) und Albertbrücke (Kfz/DVB).',
-          'SPERRUNG AKTIV',
-          true
-        );
-      } else if (type === 'elbe') {
-        flyToSpot(13.7388, 51.0543, 15.2);
-        setInspector(
-          'Elbe & Elberadweg Pegelstatus',
-          'Pegelstand 64 cm (Niedrigwasser). Elberadweg Altstadt- und Neustadtseite voll befahrbar.',
-          'RADWEG FREI'
-        );
-      } else if (type === 'bautzner') {
-        flyToSpot(13.7621, 51.0634, 15.8);
-        setInspector(
-          'Bautzner Straße Gleiserneuerung',
-          'Gleis- und Leitungsbauarbeiten. Schienenersatzverkehr DVB Linie 11 eingerichtet.',
-          'BAUSTELLE',
-          true
-        );
+    latest = data;
+    lastSuccess = Date.now();
+    requestFailed = false;
+
+    element("elbe-val").textContent =
+      new Intl.NumberFormat("de-DE", {
+        maximumFractionDigits: 2
+      }).format(data.water_level_cm);
+
+    if (map) {
+      if (!marker) {
+        marker = new maplibregl.Marker({ color: "#2B5740" })
+          .setLngLat([data.lon, data.lat])
+          .addTo(map);
+      } else {
+        marker.setLngLat([data.lon, data.lat]);
       }
     }
+  } catch (error) {
+    requestFailed = true;
+    console.warn("Elbe retrieval failed:", error.message);
 
-    let syncSec = 0;
-    setInterval(() => {
-      syncSec++;
-      document.getElementById('sync-ticker').textContent = `SYNC: VOR ${syncSec}s`;
-    }, 1000);
+    if (!latest) {
+      element("elbe-val").textContent = "--";
+      element("elbe-sub").textContent = "Daten nicht verfügbar";
+      element("sync-ticker").textContent = "ABRUF FEHLGESCHLAGEN";
 
-    map.on('load', () => {
-      // 1. Vector Layer: Carolabrücke Closed Corridor (Red)
-      map.addSource('carola-closed', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: [
-              [13.7485, 51.0515],
-              [13.7516, 51.0548]
-            ]
-          }
-        }
-      });
-      map.addLayer({
-        id: 'carola-line',
-        type: 'line',
-        source: 'carola-closed',
-        paint: {
-          'line-color': '#D32F2F',
-          'line-width': 6,
-          'line-opacity': 0.85
-        }
-      });
-
-      // 2. Vector Layer: Official Augustusbrücke Commuter Detour (Olive Green)
-      map.addSource('augustus-bypass', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: [
-              [13.7405, 51.0532],
-              [13.7418, 51.0578]
-            ]
-          }
-        }
-      });
-      map.addLayer({
-        id: 'bypass-line',
-        type: 'line',
-        source: 'augustus-bypass',
-        paint: {
-          'line-color': '#2E8B57',
-          'line-width': 4,
-          'line-dasharray': [2, 1],
-          'line-opacity': 0.9
-        }
-      });
-
-      loadTelemetry();
-      setInterval(loadTelemetry, 30000);
-    });
-
-    async function loadTelemetry() {
-      syncSec = 0;
-
-      // 1. Elbe Water Level
-      try {
-        const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/elbe');
-        const data = await res.json();
-        document.getElementById('elbe-val').textContent = data.water_level_cm;
-
-        const elbeMarker = document.createElement('div');
-        elbeMarker.className = 'beacon-wrapper';
-        elbeMarker.innerHTML = '<div class="beacon-radar"></div><div class="beacon-core"></div>';
-        elbeMarker.onclick = () => focusCorridor('elbe');
-        new maplibregl.Marker(elbeMarker).setLngLat([data.lon, data.lat]).addTo(map);
-      } catch (e) {
-        document.getElementById('elbe-val').textContent = '64';
-      }
-
-      // 2. Disruptions
-      try {
-        const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/disruptions');
-        const data = await res.json();
-        document.getElementById('corr-val').textContent = data.count;
-
-        data.features.forEach(f => {
-          const m = document.createElement('div');
-          m.className = 'beacon-wrapper';
-          m.innerHTML = '<div class="beacon-radar coral"></div><div class="beacon-core coral"></div>';
-          m.onclick = () => {
-            if (f.id === 'DD-CON-01') focusCorridor('carola');
-            else if (f.id === 'DD-CON-02') focusCorridor('bautzner');
-            else {
-              flyToSpot(f.lon, f.lat, 16.0);
-              setInspector(f.title, `Sektor: ${data.region}. ${f.type}. Ausweichrouten ausgeschildert.`, 'SPERRUNG', true);
-            }
-          };
-          new maplibregl.Marker(m).setLngLat([f.lon, f.lat]).addTo(map);
-        });
-      } catch (e) {
-        document.getElementById('corr-val').textContent = '34';
-      }
-
-      // 3. Weather
-      try {
-        const res = await fetch('https://api.lumeapp.space/api/v1/telemetry/weather');
-        const data = await res.json();
-        document.getElementById('dwd-val').textContent = data.level === 'NONE' ? 'KEINE' : data.level;
-      } catch (e) {
-        document.getElementById('dwd-val').textContent = 'KEINE';
-      }
+      showDetails(
+        "Elbe · Pegel Dresden",
+        "Der Messwert konnte nicht geladen werden. " +
+        "Ein neuer Abruf erfolgt automatisch.",
+        "NICHT VERFÜGBAR"
+      );
     }
-  </script>
+  } finally {
+    clearTimeout(timeout);
+    renderStatus();
+    setTimeout(refreshElbe, REFRESH_MS);
+  }
+}
+
+element("corr-val").textContent = "--";
+element("dwd-val").textContent = "--";
+
+showDetails(
+  "Elbe · Pegel Dresden",
+  "Offizieller Messwert wird geladen.",
+  "LÄDT"
+);
+
+// Data retrieval also works if the map cannot load.
+try {
+  map = new maplibregl.Map({
+    container: "map",
+    style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+    center: [13.7388, 51.0543],
+    zoom: 13.8,
+    pitch: 45,
+    bearing: -15
+  });
+
+  map.addControl(
+    new maplibregl.NavigationControl({ showCompass: false }),
+    "bottom-right"
+  );
+} catch (error) {
+  console.warn("Map unavailable:", error.message);
+}
+
+refreshElbe();
+setInterval(renderStatus, 10000);
+</script>
+
 </body>
 </html>
