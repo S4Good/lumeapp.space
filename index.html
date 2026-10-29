@@ -440,7 +440,7 @@ function renderStatus() {
     ? "Letzter verfügbarer Messwert. Erneuter Abruf fehlgeschlagen. "
     : "";
 
-  showDetails(
+  if (!window.lumeRoadworkSelected) showDetails(
     "Elbe · Pegel Dresden",
     prefix +
       "Wasserstand: " + latest.water_level_cm + " cm. " +
@@ -554,6 +554,311 @@ try {
 
 refreshElbe();
 setInterval(renderStatus, 10000);
+</script>
+
+
+<style id="lume-roadworks-style">
+  .telemetry-stack .filter-dock {
+    border-radius: 16px;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .roadworks-note {
+    flex-basis: 100%;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    line-height: 1.5;
+    color: #64746B;
+  }
+
+  .inspector-dock {
+    max-height: 35vh;
+    overflow-y: auto;
+  }
+
+  .insp-body {
+    white-space: pre-line;
+  }
+</style>
+
+<script id="lume-roadworks">
+(() => {
+  const endpoint =
+    "https://api.lumeapp.space/api/v1/telemetry/disruptions";
+
+  let snapshot = null;
+  let mode = "active";
+  let selectedId = null;
+  let retrievalFailed = false;
+
+  const dock = document.querySelector(".filter-dock");
+  const countElement = document.getElementById("corr-val");
+  const countLabel = countElement.parentElement.querySelector(".m-sub");
+
+  const note = document.createElement("div");
+  note.className = "roadworks-note";
+  note.setAttribute("aria-live", "polite");
+  note.textContent = "Baustellen werden geladen.";
+
+  const modes = [
+    ["active", "Heute"],
+    ["upcoming", "Demnächst"],
+    ["all", "Alle"]
+  ];
+
+  const buttons = [];
+
+  for (const [value, label] of modes) {
+    const button = document.createElement("button");
+    button.className = "dock-btn";
+    button.textContent = label;
+    button.type = "button";
+    button.setAttribute("aria-pressed", String(value === mode));
+
+    button.addEventListener("click", () => {
+      mode = value;
+      clearSelection();
+      updateLayer();
+    });
+
+    dock.appendChild(button);
+    buttons.push([value, button]);
+  }
+
+  dock.appendChild(note);
+
+  const sourceLink = document.createElement("a");
+  sourceLink.href =
+    "https://www.baustellen.sachsen.de/baustellendaten-dienste-3997.html";
+  sourceLink.textContent = "Baustellendaten: LASuV Sachsen";
+  sourceLink.target = "_blank";
+  sourceLink.rel = "noopener";
+  sourceLink.style.cssText =
+    "display:block;padding:4px 10px;font-size:0.68rem;";
+  dock.appendChild(sourceLink);
+
+  dock.querySelector(".dock-btn").addEventListener("click", () => {
+    clearSelection();
+    renderStatus();
+  });
+
+  function clearSelection() {
+    selectedId = null;
+    window.lumeRoadworkSelected = false;
+  }
+
+  function dateLabel(value) {
+    return value ? value.split("-").reverse().join(".") : "Nicht angegeben";
+  }
+
+  function visibleFeatures() {
+    if (!snapshot) return [];
+    return snapshot.features.filter(feature =>
+      mode === "all" ||
+      feature.properties.schedule_status === mode
+    );
+  }
+
+  function showRoadwork(feature) {
+    const p = feature.properties;
+    selectedId = feature.id;
+    window.lumeRoadworkSelected = true;
+
+    const labels = {
+      active: "IM ZEITRAUM",
+      upcoming: "GEPLANT",
+      ended: "ZEITRAUM BEENDET",
+      unknown: "ZEITRAUM UNKLAR"
+    };
+
+    showDetails(
+      p.street || "Gemeldete Verkehrsbeschränkung",
+      [
+        p.locality,
+        p.restriction_type,
+        "",
+        p.reason || "Kein Grund angegeben.",
+        p.notes || "",
+        "",
+        "Zeitraum: " + dateLabel(p.starts_on) +
+          " bis " + dateLabel(p.ends_on),
+        "Quelländerung: " + dateLabel(p.source_updated_on),
+        "Snapshot: " + formatTime(snapshot.snapshot_fetched_at),
+        "Quelle: LASuV Sachsen, Baustelleninformationssystem Sachsen.",
+        "Status laut veröffentlichtem Zeitraum; " +
+          "keine Bestätigung der tatsächlichen Verkehrslage."
+      ].filter(line => line !== null && line !== undefined).join("\n"),
+      labels[p.schedule_status] || "GEMELDET"
+    );
+  }
+
+  function updateLayer() {
+    if (!snapshot) return;
+
+    const features = visibleFeatures();
+    const count = new Set(
+      features.map(feature => feature.properties.source_id)
+    ).size;
+
+    countElement.textContent = count;
+    countLabel.textContent =
+      mode === "active" ? "IDs im heutigen Zeitraum" :
+      mode === "upcoming" ? "IDs mit künftigem Beginn" :
+      "IDs im geladenen Snapshot";
+
+    for (const [value, button] of buttons) {
+      button.classList.toggle("active", value === mode);
+      button.setAttribute("aria-pressed", String(value === mode));
+    }
+
+    if (map && map.getSource("roadworks")) {
+      map.getSource("roadworks").setData({
+        type: "FeatureCollection",
+        features
+      });
+    }
+
+    const snapshotTime = Date.parse(snapshot.snapshot_fetched_at);
+    const stale = !Number.isFinite(snapshotTime) ||
+      Date.now() - snapshotTime > 6 * 60 * 60 * 1000;
+
+    note.textContent =
+      (retrievalFailed ? "Abruf fehlgeschlagen · letzter Snapshot. " : "") +
+      (stale ? "Snapshot älter als 6 Stunden. " : "") +
+      count + " Quell-IDs · " + features.length + " Straßenabschnitte. " +
+      "Snapshot: " + formatTime(snapshot.snapshot_fetched_at) +
+      ". Unvollständige Abdeckung; Status laut Zeitraum.";
+  }
+
+  function installLayer() {
+    map.addSource("roadworks", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] }
+    });
+
+    map.addLayer({
+      id: "roadworks-visible",
+      type: "line",
+      source: "roadworks",
+      paint: {
+        "line-color": [
+          "match", ["get", "schedule_status"],
+          "upcoming", "#BD7A16",
+          "ended", "#64746B",
+          "unknown", "#6675A3",
+          "#C25B3F"
+        ],
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          9, 3,
+          16, 7
+        ],
+        "line-opacity": 0.85
+      }
+    });
+
+    // Wider transparent line makes selection easier.
+    map.addLayer({
+      id: "roadworks-hit",
+      type: "line",
+      source: "roadworks",
+      paint: {
+        "line-width": 24,
+        "line-opacity": 0
+      }
+    });
+
+    map.on("click", "roadworks-hit", event => {
+      const hit = event.features && event.features[0];
+      if (!hit || !snapshot) return;
+
+      const feature = snapshot.features.find(f => f.id === hit.id);
+      if (feature) showRoadwork(feature);
+    });
+
+    map.on("mouseenter", "roadworks-hit", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+
+    map.on("mouseleave", "roadworks-hit", () => {
+      map.getCanvas().style.cursor = "";
+    });
+
+    updateLayer();
+  }
+
+  async function refresh() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      const response = await fetch(endpoint, {
+        signal: controller.signal,
+        cache: "no-store"
+      });
+
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      const data = await response.json();
+
+      if (
+        data.type !== "FeatureCollection" ||
+        !Array.isArray(data.features) ||
+        !Number.isFinite(Date.parse(data.snapshot_fetched_at)) ||
+        !data.features.every(f =>
+          typeof f.id === "string" &&
+          f.properties &&
+          typeof f.properties.source_id === "string" &&
+          f.geometry &&
+          ["LineString", "MultiLineString"].includes(f.geometry.type)
+        )
+      ) {
+        throw new Error("Invalid roadworks response");
+      }
+
+      snapshot = data;
+      retrievalFailed = false;
+      updateLayer();
+
+      if (selectedId) {
+        const selected = snapshot.features.find(f => f.id === selectedId);
+        if (selected) {
+          showRoadwork(selected);
+        } else {
+          clearSelection();
+          renderStatus();
+        }
+      }
+    } catch (error) {
+      retrievalFailed = true;
+      console.warn("Roadworks retrieval failed:", error.message);
+
+      if (snapshot) {
+        updateLayer();
+      } else {
+        countElement.textContent = "--";
+        countLabel.textContent = "Daten nicht verfügbar";
+        note.textContent =
+          "Baustellendaten konnten nicht geladen werden.";
+      }
+    } finally {
+      clearTimeout(timeout);
+      setTimeout(refresh, 300000);
+    }
+  }
+
+  if (map) {
+    if (map.isStyleLoaded()) installLayer();
+    else map.once("load", installLayer);
+  }
+
+  refresh();
+  setInterval(() => {
+    if (snapshot) updateLayer();
+  }, 60000);
+})();
 </script>
 
 </body>
