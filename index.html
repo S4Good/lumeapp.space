@@ -1043,6 +1043,18 @@ setInterval(renderStatus, 10000);
     const c = latest.current;
     const [icon, label] = condition(c.weather_code, c.is_day);
 
+    const code = c.weather_code;
+    widget.dataset.day = c.is_day ? "true" : "false";
+    widget.dataset.overcast = String(code === 3);
+    widget.dataset.weather =
+      [0, 1].includes(code) ? "clear" :
+      [2, 3].includes(code) ? "cloudy" :
+      [45, 48].includes(code) ? "fog" :
+      [51, 53, 55, 56, 57, 61, 63, 65, 66, 67,
+       80, 81, 82].includes(code) ? "rain" :
+      [71, 73, 75, 77, 85, 86].includes(code) ? "snow" :
+      [95, 96, 99].includes(code) ? "storm" : "unknown";
+
     summary.textContent =
       icon + " Dresden · " + number(c.temperature_c) +
       " °C · " + label;
@@ -1066,6 +1078,7 @@ setInterval(renderStatus, 10000);
 
     freshness.style.color =
       failed || stale ? "#C25B3F" : "";
+    widget.dataset.paused = String(failed || stale);
 
     hours.replaceChildren();
 
@@ -1222,6 +1235,242 @@ setInterval(renderStatus, 10000);
   if (stack && inspector) {
     stack.appendChild(inspector);
   }
+})();
+</script>
+
+
+<style id="lume-weather-animation">
+  .weather-scene {
+    display: none;
+    position: relative;
+    height: 82px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #dcecf0, #f5f3df);
+  }
+
+  .weather-widget[data-weather] .weather-scene {
+    display: block;
+  }
+
+  .weather-widget[data-day="false"] .weather-scene {
+    background: linear-gradient(135deg, #142b3d, #354c62);
+  }
+
+  .weather-scene .sun,
+  .weather-scene .moon,
+  .weather-scene .cloud,
+  .weather-scene .drop,
+  .weather-scene .snowflake,
+  .weather-scene .mist,
+  .weather-scene .lightning {
+    display: none;
+    position: absolute;
+  }
+
+  .weather-scene .sun {
+    width: 38px;
+    height: 38px;
+    left: 30%;
+    top: 20px;
+    border-radius: 50%;
+    background: #efc563;
+    box-shadow: 0 0 0 7px #efc56330, 0 0 25px #efc56370;
+    animation: lume-sun 5s ease-in-out infinite;
+  }
+
+  .weather-scene .moon {
+    width: 34px;
+    height: 34px;
+    left: 30%;
+    top: 20px;
+    border-radius: 50%;
+    background: #f3ebc7;
+    box-shadow: 0 0 18px #f3ebc750;
+  }
+
+  .weather-widget:is(
+    [data-weather="clear"], [data-weather="cloudy"]
+  )[data-day="true"]:not([data-overcast="true"]) .sun {
+    display: block;
+  }
+
+  .weather-widget:is(
+    [data-weather="clear"], [data-weather="cloudy"]
+  )[data-day="false"]:not([data-overcast="true"]) .moon {
+    display: block;
+  }
+
+  .weather-scene .cloud {
+    width: 100px;
+    height: 27px;
+    top: 30px;
+    left: 42%;
+    border-radius: 30px;
+    background: #fff;
+    box-shadow: 0 3px 8px #16302415;
+    animation: lume-cloud 8s ease-in-out infinite alternate;
+  }
+
+  .weather-scene .cloud::before,
+  .weather-scene .cloud::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    background: inherit;
+  }
+
+  .weather-scene .cloud::before {
+    width: 42px;
+    height: 42px;
+    left: 16px;
+    top: -22px;
+  }
+
+  .weather-scene .cloud::after {
+    width: 32px;
+    height: 32px;
+    right: 15px;
+    top: -15px;
+  }
+
+  .weather-widget:is(
+    [data-weather="cloudy"], [data-weather="rain"],
+    [data-weather="snow"], [data-weather="storm"]
+  ) .cloud {
+    display: block;
+  }
+
+  .weather-widget:is(
+    [data-weather="rain"], [data-weather="storm"]
+  ) .cloud {
+    background: #9baeb7;
+  }
+
+  .weather-scene .drop {
+    width: 2px;
+    height: 11px;
+    top: 54px;
+    left: calc(44% + var(--offset));
+    border-radius: 2px;
+    background: #508fa5;
+    animation: lume-rain 1.2s linear infinite;
+    animation-delay: var(--delay);
+  }
+
+  .weather-widget:is(
+    [data-weather="rain"], [data-weather="storm"]
+  ) .drop {
+    display: block;
+  }
+
+  .weather-scene .snowflake {
+    width: 5px;
+    height: 5px;
+    top: 53px;
+    left: calc(44% + var(--offset));
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 2px #64746b;
+    animation: lume-snow 3s linear infinite;
+    animation-delay: var(--delay);
+  }
+
+  .weather-widget[data-weather="snow"] .snowflake {
+    display: block;
+  }
+
+  .weather-scene .mist {
+    left: 24%;
+    top: 26px;
+    width: 50%;
+    height: 5px;
+    border-radius: 8px;
+    background: #9baeb780;
+    box-shadow: 12px 14px #9baeb760, -8px 28px #9baeb750;
+    animation: lume-cloud 7s ease-in-out infinite alternate;
+  }
+
+  .weather-widget[data-weather="fog"] .mist {
+    display: block;
+  }
+
+  .weather-scene .lightning {
+    top: 49px;
+    left: 54%;
+    width: 11px;
+    height: 24px;
+    background: #efc563;
+    clip-path: polygon(40% 0, 100% 0, 60% 40%,
+                       100% 40%, 10% 100%, 35% 50%, 0 50%);
+  }
+
+  .weather-widget[data-weather="storm"] .lightning {
+    display: block;
+  }
+
+  .weather-widget[data-paused="true"] .weather-scene {
+    opacity: 0.55;
+  }
+
+  .weather-widget[data-paused="true"] .weather-scene * {
+    animation-play-state: paused;
+  }
+
+  @keyframes lume-sun {
+    50% { transform: scale(1.06); }
+  }
+
+  @keyframes lume-cloud {
+    from { transform: translateX(-12px); }
+    to { transform: translateX(12px); }
+  }
+
+  @keyframes lume-rain {
+    from { transform: translate(0, -3px); opacity: 0.8; }
+    to { transform: translate(-7px, 28px); opacity: 0.1; }
+  }
+
+  @keyframes lume-snow {
+    from { transform: translate(0, -2px); opacity: 1; }
+    to { transform: translate(9px, 30px); opacity: 0.2; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .weather-scene * {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script>
+(() => {
+  const widget = document.querySelector(".weather-widget");
+  if (!widget) return;
+
+  const scene = document.createElement("div");
+  scene.className = "weather-scene";
+  scene.setAttribute("aria-hidden", "true");
+  scene.innerHTML = `
+    <span class="sun"></span>
+    <span class="moon"></span>
+    <span class="cloud"></span>
+    <span class="mist"></span>
+    <span class="lightning"></span>
+  `;
+
+  for (let i = 0; i < 5; i++) {
+    for (const kind of ["drop", "snowflake"]) {
+      const particle = document.createElement("span");
+      particle.className = kind;
+      particle.style.setProperty("--offset", (i * 16) + "px");
+      particle.style.setProperty("--delay", (-i * 0.4) + "s");
+      scene.appendChild(particle);
+    }
+  }
+
+  widget.prepend(scene);
 })();
 </script>
 
