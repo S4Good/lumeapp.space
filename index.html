@@ -1141,5 +1141,89 @@ setInterval(renderStatus, 10000);
 })();
 </script>
 
+
+<style id="lume-panel-layout">
+  .telemetry-stack {
+    gap: 14px;
+    max-height: calc(100vh - 110px);
+    max-height: calc(100dvh - 110px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    padding-bottom: 8px;
+  }
+
+  .telemetry-stack > .glass-panel {
+    flex-shrink: 0;
+  }
+
+  .telemetry-stack .inspector-dock {
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    margin: 0;
+  }
+
+  .telemetry-stack .filter-dock {
+    margin: 0;
+  }
+
+  .insp-title {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  #insp-header {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .insp-tag {
+    flex-shrink: 0;
+  }
+
+  .utility-bar {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 12px;
+    max-width: calc(100vw - 40px);
+  }
+
+  @media (max-width: 600px) {
+    .telemetry-stack {
+      width: calc(100vw - 24px);
+      max-height: 58vh;
+      max-height: 58dvh;
+    }
+
+    .utility-bar {
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      max-width: none;
+      justify-content: center;
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+
+    .weather-hours {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+</style>
+
+<script>
+(() => {
+  const stack = document.querySelector(".telemetry-stack");
+  const inspector = document.querySelector(".inspector-dock");
+
+  if (stack && inspector) {
+    stack.appendChild(inspector);
+  }
+})();
+</script>
+
 </body>
 </html>
