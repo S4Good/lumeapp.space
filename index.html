@@ -886,5 +886,260 @@ setInterval(renderStatus, 10000);
 })();
 </script>
 
+
+<style id="lume-weather-style">
+  .weather-widget {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--card-border);
+  }
+
+  .weather-widget summary {
+    cursor: pointer;
+    line-height: 1.6;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .weather-meta {
+    margin-top: 6px;
+    font-size: 0.68rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .weather-meta a {
+    color: var(--olive-accent);
+  }
+
+  .weather-current {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    line-height: 1.6;
+  }
+
+  .weather-hours {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 0;
+    margin: 10px 0 0;
+    list-style: none;
+  }
+
+  .weather-hours li {
+    padding: 8px;
+    border-radius: 8px;
+    background: var(--olive-pill);
+    font-size: 0.72rem;
+    line-height: 1.6;
+  }
+
+  .weather-hours strong,
+  .weather-hours span {
+    display: block;
+  }
+</style>
+
+<script id="lume-weather-widget">
+(() => {
+  const endpoint =
+    "https://api.lumeapp.space/api/v1/telemetry/weather";
+
+  const widget = document.createElement("section");
+  widget.className = "weather-widget";
+  widget.setAttribute("aria-label", "Wetter Dresden");
+  widget.innerHTML = `
+    <details>
+      <summary id="weather-summary">Wetter Dresden wird geladen …</summary>
+      <div class="weather-current" id="weather-current"></div>
+      <ul class="weather-hours" id="weather-hours"
+          aria-label="Stündliche Vorhersage"></ul>
+    </details>
+    <div class="weather-meta">
+      <span id="weather-freshness" aria-live="polite">
+        Modellbasierte Bedingungen und Vorhersage.
+      </span>
+      <br>
+      Quelle: <a href="https://open-meteo.com/"
+                 target="_blank" rel="noopener">Open-Meteo</a>
+      · Modellschätzung, keine Stationsmessung
+    </div>
+  `;
+
+  document.querySelector(".cockpit-top-left").appendChild(widget);
+
+  const summary = widget.querySelector("#weather-summary");
+  const currentText = widget.querySelector("#weather-current");
+  const hours = widget.querySelector("#weather-hours");
+  const freshness = widget.querySelector("#weather-freshness");
+
+  let latest = null;
+  let failed = false;
+
+  const number = value =>
+    Number.isFinite(value)
+      ? new Intl.NumberFormat("de-DE", {
+          maximumFractionDigits: 1
+        }).format(value)
+      : "–";
+
+  const hour = value =>
+    new Intl.DateTimeFormat("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Berlin"
+    }).format(new Date(value));
+
+  function condition(code, isDay = null) {
+    const clearIcon =
+      isDay === false ? "🌙" : isDay === true ? "☀️" : "🌤️";
+
+    const labels = {
+      0: [clearIcon, "Klar"],
+      1: [clearIcon, "Überwiegend klar"],
+      2: ["⛅", "Teilweise bewölkt"],
+      3: ["☁️", "Bedeckt"],
+      45: ["🌫️", "Nebel"],
+      48: ["🌫️", "Nebel mit Reif"],
+      51: ["🌦️", "Leichter Nieselregen"],
+      53: ["🌦️", "Nieselregen"],
+      55: ["🌧️", "Starker Nieselregen"],
+      56: ["🌧️", "Gefrierender Nieselregen"],
+      57: ["🌧️", "Gefrierender Nieselregen"],
+      61: ["🌧️", "Leichter Regen"],
+      63: ["🌧️", "Regen"],
+      65: ["🌧️", "Starker Regen"],
+      66: ["🌧️", "Gefrierender Regen"],
+      67: ["🌧️", "Gefrierender Regen"],
+      71: ["🌨️", "Leichter Schneefall"],
+      73: ["🌨️", "Schneefall"],
+      75: ["🌨️", "Starker Schneefall"],
+      77: ["🌨️", "Schneegriesel"],
+      80: ["🌦️", "Leichte Regenschauer"],
+      81: ["🌧️", "Regenschauer"],
+      82: ["🌧️", "Heftige Regenschauer"],
+      85: ["🌨️", "Schneeschauer"],
+      86: ["🌨️", "Starke Schneeschauer"],
+      95: ["⛈️", "Gewitter"],
+      96: ["⛈️", "Gewitter mit Hagel"],
+      99: ["⛈️", "Gewitter mit Hagel"]
+    };
+
+    return labels[code] || ["🌡️", "Bedingungen unbekannt"];
+  }
+
+  function render() {
+    if (!latest) {
+      summary.textContent = failed
+        ? "Wetter Dresden · nicht verfügbar"
+        : "Wetter Dresden wird geladen …";
+      freshness.textContent = failed
+        ? "Abruf fehlgeschlagen. Neuer Versuch erfolgt automatisch."
+        : "Modellbasierte Bedingungen und Vorhersage.";
+      return;
+    }
+
+    const c = latest.current;
+    const [icon, label] = condition(c.weather_code, c.is_day);
+
+    summary.textContent =
+      icon + " Dresden · " + number(c.temperature_c) +
+      " °C · " + label;
+
+    currentText.textContent =
+      "Gefühlt " + number(c.feels_like_c) +
+      " °C · Wind " + number(c.wind_speed_kmh) + " km/h";
+
+    const now = Date.now();
+    const stale =
+      latest.status !== "ok" ||
+      now - Date.parse(latest.fetched_at) > 3600000 ||
+      now - Date.parse(c.valid_at) > 3600000;
+
+    freshness.textContent =
+      (failed ? "Abruf fehlgeschlagen · letzte verfügbare Daten. " : "") +
+      (stale ? "Daten veraltet. " : "") +
+      "Gültig: " + formatTime(c.valid_at) +
+      " · Abgerufen: " + hour(latest.fetched_at) +
+      " · Zeiten: Berlin";
+
+    freshness.style.color =
+      failed || stale ? "#C25B3F" : "";
+
+    hours.replaceChildren();
+
+    for (const forecast of latest.hourly) {
+      if (Date.parse(forecast.valid_at) < now) continue;
+
+      const item = document.createElement("li");
+      const time = document.createElement("strong");
+      const temperature = document.createElement("span");
+      const rain = document.createElement("span");
+
+      time.textContent = hour(forecast.valid_at);
+      temperature.textContent =
+        number(forecast.temperature_c) + " °C";
+      rain.textContent =
+        "Regen: " + number(forecast.precipitation_probability_pct) + " %";
+
+      const [, description] = condition(forecast.weather_code);
+      item.title = description;
+      item.append(time, temperature, rain);
+      hours.appendChild(item);
+    }
+
+    if (!hours.children.length) {
+      const item = document.createElement("li");
+      item.textContent = "Keine kommenden Stunden verfügbar.";
+      hours.appendChild(item);
+    }
+  }
+
+  async function refresh() {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const response = await fetch(endpoint, {
+        signal: controller.signal,
+        cache: "no-store"
+      });
+
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      const data = await response.json();
+
+      if (
+        data.data_kind !== "model_estimate_and_forecast" ||
+        !data.current ||
+        !Number.isFinite(data.current.temperature_c) ||
+        !Number.isFinite(Date.parse(data.current.valid_at)) ||
+        !Number.isFinite(Date.parse(data.fetched_at)) ||
+        !Array.isArray(data.hourly) ||
+        !data.hourly.every(f =>
+          Number.isFinite(Date.parse(f.valid_at))
+        )
+      ) {
+        throw new Error("Invalid weather response");
+      }
+
+      latest = data;
+      failed = false;
+    } catch (error) {
+      failed = true;
+      console.warn("Weather retrieval failed:", error.message);
+    } finally {
+      clearTimeout(timeout);
+      render();
+      setTimeout(refresh, 300000);
+    }
+  }
+
+  refresh();
+  setInterval(render, 60000);
+})();
+</script>
+
 </body>
 </html>
