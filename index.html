@@ -716,7 +716,13 @@ setInterval(renderStatus, 10000);
     if (map && map.getSource("roadworks")) {
       map.getSource("roadworks").setData({
         type: "FeatureCollection",
-        features
+        features: features.map(feature => ({
+          ...feature,
+          properties: {
+            ...feature.properties,
+            lume_feature_key: String(feature.id)
+          }
+        }))
       });
     }
 
@@ -770,11 +776,30 @@ setInterval(renderStatus, 10000);
       }
     });
 
-    map.on("click", "roadworks-hit", event => {
-      const hit = event.features && event.features[0];
-      if (!hit || !snapshot) return;
+    map.on("click", event => {
+      if (!snapshot || !map.getLayer("roadworks-visible")) return;
 
-      const feature = snapshot.features.find(f => f.id === hit.id);
+      const tolerance = 10;
+      const hits = map.queryRenderedFeatures(
+        [
+          [event.point.x - tolerance, event.point.y - tolerance],
+          [event.point.x + tolerance, event.point.y + tolerance]
+        ],
+        { layers: ["roadworks-visible"] }
+      );
+
+      const hit = hits.find(feature =>
+        feature.properties &&
+        feature.properties.lume_feature_key
+      );
+
+      if (!hit) return;
+
+      const key = hit.properties.lume_feature_key;
+      const feature = snapshot.features.find(
+        item => String(item.id) === String(key)
+      );
+
       if (feature) showRoadwork(feature);
     });
 
