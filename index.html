@@ -242,10 +242,78 @@
       .inspector-dock { width: calc(100vw - 40px); bottom: 70px; }
     }
   </style>
+
+<style id="lume-layout-fix">
+  .telemetry-stack {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    width: min(420px, calc(100vw - 40px));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .telemetry-stack .cockpit-top-left {
+    position: static;
+    width: 100%;
+  }
+
+  .telemetry-stack .filter-dock {
+    position: static;
+    transform: none;
+    display: flex;
+    align-self: flex-start;
+    max-width: 100%;
+  }
+
+  .brand-row {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px 12px;
+  }
+
+  #sync-ticker {
+    font-size: 0.65rem !important;
+  }
+
+  .metrics-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .metric-box:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .metric-box:first-child .m-val {
+    font-size: 1.8rem;
+  }
+
+  .m-sub {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 480px) {
+    .telemetry-stack {
+      top: 12px;
+      left: 12px;
+      width: calc(100vw - 24px);
+    }
+
+    .telemetry-stack .cockpit-top-left {
+      padding: 14px 16px;
+    }
+  }
+</style>
+
 </head>
 <body>
   <div id="map"></div>
 
+  <div class="telemetry-stack">
   <div class="glass-panel cockpit-top-left">
     <div class="brand-row">
       <span class="brand-pill" id="feed-status">Daten werden geladen</span>
@@ -279,6 +347,7 @@
         Elbe · Dresden
       </button>
     </div>
+  </div>
 
   <div class="glass-panel inspector-dock">
     <div class="insp-title">
