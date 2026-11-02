@@ -647,6 +647,12 @@ setInterval(renderStatus, 10000);
   function clearSelection() {
     selectedId = null;
     window.lumeRoadworkSelected = false;
+    if (window.lumeHighlightRoadwork) {
+      window.lumeHighlightRoadwork({
+        type: "FeatureCollection",
+        features: []
+      });
+    }
   }
 
   function dateLabel(value) {
@@ -674,6 +680,15 @@ setInterval(renderStatus, 10000);
     const p = feature.properties;
     selectedId = feature.id;
     window.lumeRoadworkSelected = true;
+    if (window.lumeHighlightRoadwork) {
+      window.lumeHighlightRoadwork({
+        type: "FeatureCollection",
+        features: snapshot.features.filter(
+          item => item.properties.source_id ===
+                  feature.properties.source_id
+        )
+      });
+    }
 
     const labels = {
       active: "IM ZEITRAUM",
@@ -1774,6 +1789,85 @@ setInterval(renderStatus, 10000);
       clearTimeout(timeout);
     }
   }
+})();
+</script>
+
+
+<script id="lume-selection-highlight">
+(() => {
+  if (!map) return;
+
+  let selected = {
+    type: "FeatureCollection",
+    features: []
+  };
+
+  window.lumeHighlightRoadwork = collection => {
+    selected = collection;
+    const source = map.getSource("selected-roadwork");
+    if (source) source.setData(selected);
+  };
+
+  function installHighlight() {
+    if (map.getSource("selected-roadwork")) return;
+
+    map.addSource("selected-roadwork", {
+      type: "geojson",
+      data: selected
+    });
+
+    // Soft outer halo.
+    map.addLayer({
+      id: "selected-roadwork-glow",
+      type: "line",
+      source: "selected-roadwork",
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#00BFCB",
+        "line-width": 26,
+        "line-opacity": 0.35,
+        "line-blur": 7
+      }
+    });
+
+    // Dark casing provides contrast against the light basemap.
+    map.addLayer({
+      id: "selected-roadwork-outline",
+      type: "line",
+      source: "selected-roadwork",
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#164D5C",
+        "line-width": 10,
+        "line-opacity": 0.95
+      }
+    });
+
+    // Bright centre follows the exact source geometry.
+    map.addLayer({
+      id: "selected-roadwork-core",
+      type: "line",
+      source: "selected-roadwork",
+      layout: {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      paint: {
+        "line-color": "#70FFE5",
+        "line-width": 5,
+        "line-opacity": 1
+      }
+    });
+  }
+
+  if (map.isStyleLoaded()) installHighlight();
+  else map.once("load", installHighlight);
 })();
 </script>
 
