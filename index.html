@@ -309,6 +309,87 @@
   }
 </style>
 
+
+<style id="lume-place-search-style">
+  .place-search-form > label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .place-search-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .place-search-row input {
+    flex: 1 1 150px;
+    min-width: 0;
+    width: 100%;
+  }
+  .place-search-row input,
+  .place-search-row button {
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 10px;
+    border: 1px solid #b7c8bf;
+    border-radius: 8px;
+    font: inherit;
+  }
+  .place-search-row button {
+    background: #183e2e;
+    color: white;
+    cursor: pointer;
+  }
+  .place-search-row button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+  #place-search-results button {
+    min-height: 44px;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+  }
+  .place-search-form :focus-visible,
+  #place-search-results button:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 3px;
+  }
+</style>
+
+
+<style id="lume-nearby-reset-style">
+  .nearby-location-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .nearby-location-row > p {
+    flex: 1 1 180px;
+    overflow-wrap: anywhere;
+  }
+  #nearby-reset {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid #b7c8bf;
+    border-radius: 8px;
+    background: #e5eee8;
+    color: #183e2e;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #nearby-reset[hidden] {
+    display: none;
+  }
+  #nearby-reset:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 3px;
+  }
+</style>
+
 </head>
 <body>
   <div id="map"></div>
@@ -644,7 +725,12 @@ setInterval(renderStatus, 10000);
     renderStatus();
   });
 
+  window.lumeClearRoadworkSelection = clearSelection;
+
   function clearSelection() {
+    if (window.lumeEndRoadworkDetails) {
+      window.lumeEndRoadworkDetails();
+    }
     selectedId = null;
     window.lumeRoadworkSelected = false;
     if (window.lumeHighlightRoadwork) {
@@ -677,6 +763,9 @@ setInterval(renderStatus, 10000);
   };
 
   function showRoadwork(feature) {
+    if (window.lumeBeginRoadworkDetails) {
+      window.lumeBeginRoadworkDetails();
+    }
     const p = feature.properties;
     selectedId = feature.id;
     window.lumeRoadworkSelected = true;
@@ -1573,6 +1662,32 @@ setInterval(renderStatus, 10000);
   panel.className = "glass-panel nearby-panel";
   panel.innerHTML = `
     <h2>Einschränkungen in deiner Nähe</h2>
+    <form id="place-search-form" class="place-search-form">
+      <label for="place-search-input">Straße oder Ort suchen</label>
+      <div class="place-search-row">
+        <input id="place-search-input" type="search"
+               placeholder="z. B. Bahnhof Neustadt"
+               minlength="3" maxlength="120" required
+               autocomplete="off">
+        <button type="submit">Suchen</button>
+      </div>
+    </form>
+    <p class="nearby-note" id="place-search-status"
+       role="status" aria-live="polite"></p>
+    <ul class="nearby-results" id="place-search-results"></ul>
+    <p class="nearby-note">
+      Ortssuche: Nominatim ·
+      <a href="https://www.openstreetmap.org/copyright"
+         target="_blank" rel="noopener">© OpenStreetMap contributors</a>
+      <br>Suchtext wird an OpenStreetMap übermittelt.
+      Bitte keine vertraulichen Angaben eingeben.
+    </p>
+    <div class="nearby-location-row">
+      <p class="nearby-note" id="nearby-location"></p>
+      <button type="button" id="nearby-reset" hidden>
+        Neue Suche
+      </button>
+    </div>
     <div class="nearby-controls">
       <button type="button" id="nearby-pick" aria-pressed="false">
         Punkt auf Karte wählen
@@ -1601,6 +1716,16 @@ setInterval(renderStatus, 10000);
   const message = panel.querySelector("#nearby-message");
   const results = panel.querySelector("#nearby-results");
 
+  const searchForm = panel.querySelector("#place-search-form");
+  const searchInput = panel.querySelector("#place-search-input");
+  const searchStatus = panel.querySelector("#place-search-status");
+  const searchResults = panel.querySelector("#place-search-results");
+  const searchButton = searchForm.querySelector("button");
+  const locationLabel = panel.querySelector("#nearby-location");
+  const resetButton = panel.querySelector("#nearby-reset");
+  let searchController = null;
+  let searchVersion = 0;
+
   let choosing = false;
   let selected = null;
   let marker = null;
@@ -1627,21 +1752,184 @@ setInterval(renderStatus, 10000);
     }
   });
 
-  map.on("click", event => {
-    if (!choosing) return;
-
-    selected = {
-      lat: event.lngLat.lat,
-      lon: event.lngLat.lng
-    };
+  function selectLocation(lat, lon, label) {
+    if (window.lumeClearRoadworkSelection) {
+      window.lumeClearRoadworkSelection();
+    }
+    selected = { lat, lon };
     setChoosing(false);
+    locationLabel.textContent = "Gewählter Ort: " + label;
+    resetButton.hidden = false;
 
     if (!marker) {
       marker = new maplibregl.Marker({ color: "#327B9A" });
     }
-    marker.setLngLat([selected.lon, selected.lat]).addTo(map);
+    marker.setLngLat([lon, lat]).addTo(map);
 
+    // The previous road selection belongs to the previous search.
+    window.lumeRoadworkSelected = false;
+    if (window.lumeHighlightRoadwork) {
+      window.lumeHighlightRoadwork({
+        type: "FeatureCollection", features: []
+      });
+    }
+    renderStatus();
     loadNearby();
+  }
+
+  map.on("click", event => {
+    if (!choosing) return;
+    selectLocation(
+      event.lngLat.lat,
+      event.lngLat.lng,
+      "Punkt auf der Karte"
+    );
+  });
+
+  resetButton.addEventListener("click", () => {
+    // Invalidate pending searches so old responses cannot restore results.
+    searchVersion++;
+    version++;
+    if (searchController) searchController.abort();
+    if (controller) controller.abort();
+
+    selected = null;
+    setChoosing(false);
+    if (marker) {
+      marker.remove();
+      marker = null;
+    }
+
+    searchForm.reset();
+    searchButton.disabled = false;
+    radius.value = "800";
+    searchResults.replaceChildren();
+    results.replaceChildren();
+    searchStatus.textContent = "";
+    locationLabel.textContent = "";
+    message.textContent =
+      "Suche eine Straße oder einen Ort, " +
+      "oder wähle einen Punkt auf der Karte.";
+    resetButton.hidden = true;
+
+    if (window.lumeClearRoadworkSelection) {
+      window.lumeClearRoadworkSelection();
+    }
+    renderStatus();
+
+    map.stop();
+    map.jumpTo({
+      center: [13.7430, 51.0535],
+      zoom: 12,
+      bearing: 0,
+      pitch: 0,
+      padding: { top: 0, bottom: 0, left: 0, right: 0 }
+    });
+
+    searchForm.scrollIntoView({ block: "nearest" });
+    searchInput.focus({ preventScroll: true });
+  });
+
+  searchInput.addEventListener("input", () => {
+    searchVersion++;
+    if (searchController) searchController.abort();
+    searchButton.disabled = false;
+    searchResults.replaceChildren();
+    searchStatus.textContent = "";
+  });
+
+  searchForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const query = searchInput.value.trim();
+    if (query.length < 3) return;
+
+    const currentSearch = ++searchVersion;
+    if (searchController) searchController.abort();
+    const activeSearch = new AbortController();
+    searchController = activeSearch;
+    const timeout = setTimeout(() => activeSearch.abort(), 15000);
+
+    searchButton.disabled = true;
+    searchResults.replaceChildren();
+    searchStatus.textContent = "Orte werden gesucht …";
+
+    try {
+      const response = await fetch(
+        "https://api.lumeapp.space/api/v1/places/search?" +
+          new URLSearchParams({ q: query }),
+        { signal: activeSearch.signal, cache: "no-store" }
+      );
+
+      if (response.status === 429) {
+        throw new Error(
+          "Suche gerade ausgelastet. Bitte in " +
+          (response.headers.get("Retry-After") || "einigen") +
+          " Sekunden erneut suchen."
+        );
+      }
+      if (!response.ok) {
+        throw new Error(
+          "Ortssuche derzeit nicht verfügbar. " +
+          "Du kannst einen Punkt auf der Karte wählen."
+        );
+      }
+
+      const data = await response.json();
+      if (
+        !Array.isArray(data.results) ||
+        !data.results.every(place =>
+          typeof place.label === "string" &&
+          Number.isFinite(place.lat) &&
+          Number.isFinite(place.lon) &&
+          place.lat >= 50.97 && place.lat <= 51.20 &&
+          place.lon >= 13.57 && place.lon <= 14.03
+        )
+      ) {
+        throw new Error("Ungültige Suchantwort. Bitte erneut versuchen.");
+      }
+      if (currentSearch !== searchVersion) return;
+
+      // Combine entries with identical labels; keep distinct entrances.
+      const seen = new Set();
+      for (const place of data.results) {
+        if (seen.has(place.label)) continue;
+        seen.add(place.label);
+
+        const item = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = place.label;
+        button.addEventListener("click", () => {
+          searchVersion++;
+          searchResults.replaceChildren();
+          searchStatus.textContent = "Ort ausgewählt.";
+          selectLocation(place.lat, place.lon, place.label);
+          map.flyTo({
+            center: [place.lon, place.lat],
+            zoom: 14,
+            essential: false
+          });
+        });
+        item.appendChild(button);
+        searchResults.appendChild(item);
+      }
+
+      searchStatus.textContent = seen.size
+        ? seen.size + " Treffer. Bitte einen Ort auswählen."
+        : "Keine Treffer. Versuche einen anderen Namen " +
+          "oder wähle einen Punkt auf der Karte.";
+
+    } catch (error) {
+      if (currentSearch !== searchVersion) return;
+      searchStatus.textContent = error.name === "AbortError"
+        ? "Die Suche hat zu lange gedauert. Bitte erneut versuchen."
+        : error.message;
+    } finally {
+      clearTimeout(timeout);
+      if (currentSearch === searchVersion) {
+        searchButton.disabled = false;
+      }
+    }
   });
 
   radius.addEventListener("change", () => {
@@ -1868,6 +2156,108 @@ setInterval(renderStatus, 10000);
 
   if (map.isStyleLoaded()) installHighlight();
   else map.once("load", installHighlight);
+})();
+</script>
+
+
+<style id="lume-roadwork-back-style">
+  #roadwork-back {
+    display: block;
+    min-height: 44px;
+    margin: 0 0 14px;
+    padding: 8px 12px;
+    border: 1px solid #b7c8bf;
+    border-radius: 8px;
+    background: #e5eee8;
+    color: #183e2e;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+  #roadwork-back[hidden] {
+    display: none;
+  }
+  #roadwork-back:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 3px;
+  }
+</style>
+
+<script id="lume-roadwork-back">
+(() => {
+  if (!map) return;
+
+  const inspector = document.querySelector(".inspector-dock");
+  const stack = document.querySelector(".telemetry-stack");
+  if (!inspector || !stack) return;
+
+  const back = document.createElement("button");
+  back.id = "roadwork-back";
+  back.type = "button";
+  back.hidden = true;
+  inspector.prepend(back);
+
+  let previousView = null;
+
+  window.lumeBeginRoadworkDetails = () => {
+    // Keep the original overview when switching between restrictions.
+    if (!previousView) {
+      map.stop();
+      const center = map.getCenter();
+      const results = document.getElementById("nearby-results");
+      const hasResults = Boolean(
+        results && results.querySelector("button")
+      );
+
+      previousView = {
+        camera: {
+          center: [center.lng, center.lat],
+          zoom: map.getZoom(),
+          bearing: map.getBearing(),
+          pitch: map.getPitch(),
+          padding: { ...map.getPadding() }
+        },
+        scrollTop: stack.scrollTop,
+        focusTarget: document.activeElement,
+        hasResults
+      };
+    }
+
+    back.textContent = previousView.hasResults
+      ? "← Zurück zu den Ergebnissen"
+      : "← Zurück zur Übersicht";
+    back.hidden = false;
+  };
+
+  window.lumeEndRoadworkDetails = () => {
+    previousView = null;
+    back.hidden = true;
+  };
+
+  back.addEventListener("click", () => {
+    if (!previousView) return;
+    const saved = previousView;
+
+    window.lumeClearRoadworkSelection();
+    renderStatus();
+
+    map.stop();
+    map.jumpTo(saved.camera);
+    stack.scrollTop = saved.scrollTop;
+
+    if (
+      saved.focusTarget instanceof HTMLElement &&
+      saved.focusTarget.isConnected &&
+      stack.contains(saved.focusTarget) &&
+      saved.focusTarget !== document.body
+    ) {
+      saved.focusTarget.focus({ preventScroll: true });
+    } else {
+      const target = document.getElementById("nearby-pick");
+      if (target) target.focus({ preventScroll: true });
+    }
+  });
 })();
 </script>
 
