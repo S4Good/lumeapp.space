@@ -616,6 +616,10 @@ showDetails(
 
 // Data retrieval also works if the map cannot load.
 try {
+  // Optional preview mode for checking the map-free interface.
+  if (new URLSearchParams(location.search).get("map") === "off") {
+    throw new Error("Map disabled for fallback preview");
+  }
   map = new maplibregl.Map({
     container: "map",
     style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
@@ -630,6 +634,7 @@ try {
     "bottom-right"
   );
 } catch (error) {
+  map = null;
   console.warn("Map unavailable:", error.message);
 }
 
@@ -1656,7 +1661,6 @@ setInterval(renderStatus, 10000);
 
 <script id="lume-nearby">
 (() => {
-  if (!map) return;
 
   const panel = document.createElement("section");
   panel.className = "glass-panel nearby-panel";
@@ -1738,7 +1742,7 @@ setInterval(renderStatus, 10000);
     pick.textContent = value
       ? "Auswahl abbrechen"
       : "Punkt auf Karte wählen";
-    map.getCanvas().style.cursor = value ? "crosshair" : "";
+    if (map) map.getCanvas().style.cursor = value ? "crosshair" : "";
   }
 
   pick.addEventListener("click", () => {
@@ -1761,10 +1765,12 @@ setInterval(renderStatus, 10000);
     locationLabel.textContent = "Gewählter Ort: " + label;
     resetButton.hidden = false;
 
-    if (!marker) {
-      marker = new maplibregl.Marker({ color: "#327B9A" });
+    if (map) {
+      if (!marker) {
+        marker = new maplibregl.Marker({ color: "#327B9A" });
+      }
+      marker.setLngLat([lon, lat]).addTo(map);
     }
-    marker.setLngLat([lon, lat]).addTo(map);
 
     // The previous road selection belongs to the previous search.
     window.lumeRoadworkSelected = false;
@@ -1777,7 +1783,7 @@ setInterval(renderStatus, 10000);
     loadNearby();
   }
 
-  map.on("click", event => {
+  if (map) map.on("click", event => {
     if (!choosing) return;
     selectLocation(
       event.lngLat.lat,
@@ -1817,8 +1823,8 @@ setInterval(renderStatus, 10000);
     }
     renderStatus();
 
-    map.stop();
-    map.jumpTo({
+    if (map) map.stop();
+    if (map) map.jumpTo({
       center: [13.7430, 51.0535],
       zoom: 12,
       bearing: 0,
@@ -1904,7 +1910,7 @@ setInterval(renderStatus, 10000);
           searchResults.replaceChildren();
           searchStatus.textContent = "Ort ausgewählt.";
           selectLocation(place.lat, place.lon, place.label);
-          map.flyTo({
+          if (map) map.flyTo({
             center: [place.lon, place.lat],
             zoom: 14,
             essential: false
@@ -2028,6 +2034,7 @@ setInterval(renderStatus, 10000);
             return;
           }
 
+          if (map) {
           const bounds = new maplibregl.LngLatBounds();
           const segments = data.features.filter(
             f => f.properties.source_id === p.source_id
@@ -2049,6 +2056,8 @@ setInterval(renderStatus, 10000);
                 : { top: 80, bottom: 80, left: 30, right: 30 },
               maxZoom: 16
             });
+          }
+
           }
 
           document.querySelector(".inspector-dock").scrollIntoView({
@@ -2186,7 +2195,6 @@ setInterval(renderStatus, 10000);
 
 <script id="lume-roadwork-back">
 (() => {
-  if (!map) return;
 
   const inspector = document.querySelector(".inspector-dock");
   const stack = document.querySelector(".telemetry-stack");
@@ -2203,21 +2211,21 @@ setInterval(renderStatus, 10000);
   window.lumeBeginRoadworkDetails = () => {
     // Keep the original overview when switching between restrictions.
     if (!previousView) {
-      map.stop();
-      const center = map.getCenter();
+      if (map) map.stop();
+      const center = map ? map.getCenter() : null;
       const results = document.getElementById("nearby-results");
       const hasResults = Boolean(
         results && results.querySelector("button")
       );
 
       previousView = {
-        camera: {
+        camera: map ? {
           center: [center.lng, center.lat],
           zoom: map.getZoom(),
           bearing: map.getBearing(),
           pitch: map.getPitch(),
           padding: { ...map.getPadding() }
-        },
+        } : null,
         scrollTop: stack.scrollTop,
         focusTarget: document.activeElement,
         hasResults
@@ -2242,8 +2250,10 @@ setInterval(renderStatus, 10000);
     window.lumeClearRoadworkSelection();
     renderStatus();
 
-    map.stop();
-    map.jumpTo(saved.camera);
+    if (map && saved.camera) {
+      map.stop();
+      map.jumpTo(saved.camera);
+    }
     stack.scrollTop = saved.scrollTop;
 
     if (
@@ -2258,6 +2268,65 @@ setInterval(renderStatus, 10000);
       if (target) target.focus({ preventScroll: true });
     }
   });
+})();
+</script>
+
+
+<style id="lume-map-fallback-style">
+  body.lume-map-unavailable {
+    background: #edf1ed;
+  }
+  .lume-map-unavailable #map {
+    display: none;
+  }
+  .lume-map-unavailable .telemetry-stack {
+    width: min(640px, calc(100% - 40px));
+    max-width: calc(100% - 40px);
+  }
+  .telemetry-stack .map-fallback-notice {
+    position: static;
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  .map-fallback-notice p {
+    margin: 8px 0 0;
+    line-height: 1.5;
+  }
+</style>
+
+<script id="lume-map-fallback">
+(() => {
+  if (map) return;
+
+  document.body.classList.add("lume-map-unavailable");
+  const stack = document.querySelector(".telemetry-stack");
+  if (!stack) return;
+
+  const notice = document.createElement("section");
+  notice.className = "glass-panel map-fallback-notice";
+  notice.setAttribute("role", "status");
+
+  const title = document.createElement("strong");
+  title.textContent = "Karte nicht verfügbar";
+
+  const explanation = document.createElement("p");
+  explanation.textContent =
+    "Die Karte konnte in diesem Browser nicht gestartet werden. " +
+    "Du kannst weiterhin nach Straßen und Orten suchen, " +
+    "Einschränkungen in der Nähe ansehen und Details öffnen.";
+
+  notice.append(title, explanation);
+  stack.prepend(notice);
+
+  const pick = document.getElementById("nearby-pick");
+  if (pick) pick.hidden = true;
+
+  const message = document.getElementById("nearby-message");
+  if (message) {
+    message.textContent =
+      "Suche eine Straße oder einen Ort, um Einträge in der Nähe zu finden.";
+  }
 })();
 </script>
 
