@@ -2,8 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Lume Space // Dresden Civic Intelligence Node</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lume Dresden · Baustellen, Wetter &amp; Elbe</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -392,16 +392,54 @@
 
 </head>
 <body>
-  <div id="map"></div>
 
-  <div class="telemetry-stack">
+  <header class="lume-floating-brand">
+    <span class="brand-dot" aria-hidden="true"></span>
+    <div>
+      <h1>Lume Dresden</h1>
+      <p>Dein Blick auf die Stadt.</p>
+    </div>
+  </header>
+
+  <button type="button" id="sidebar-toggle" class="lume-map-button"
+          aria-controls="lume-sidebar" aria-expanded="true">
+    <span aria-hidden="true">☰</span>
+    <span>Suche &amp; Infos</span>
+  </button>
+
+  <div id="basemap-switch" class="lume-basemap-switch"
+       role="group" aria-label="Kartenansicht" hidden>
+    <button type="button" data-basemap="street"
+            aria-pressed="true">Karte</button>
+    <button type="button" data-basemap="aerial"
+            aria-pressed="false">Luftbild</button>
+  </div>
+
+  <p id="basemap-status" class="lume-map-status"
+     role="status" hidden></p>
+
+  <div id="map" aria-label="Karte von Dresden"></div>
+
+
+
+  <div class="telemetry-stack" id="lume-sidebar"
+       role="region" aria-label="Suche und Stadtinformationen">
+    <div class="sidebar-heading">
+      <div>
+        <strong>Was ist in deiner Nähe?</strong>
+        <p>Ort wählen. Einschränkungen entdecken.</p>
+      </div>
+      <button type="button" id="sidebar-close"
+              aria-label="Seitenleiste einklappen"
+              title="Seitenleiste einklappen">‹</button>
+    </div>
+
   <div class="glass-panel cockpit-top-left">
     <div class="brand-row">
       <span class="brand-pill" id="feed-status">Daten werden geladen</span>
       <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="sync-ticker">ABRUF AUSSTEHEND</span>
     </div>
-    <h1>Lume Dresden</h1>
-    <div class="sub-head">Dresdner Stadtdaten mit Quelle und Messzeit.</div>
+    <h2 class="city-data-heading">Wetter &amp; Stadtdaten</h2>
 
     <div class="metrics-strip">
       <div class="metric-box">
@@ -768,6 +806,9 @@ setInterval(renderStatus, 10000);
   };
 
   function showRoadwork(feature) {
+    if (window.lumeSetSidebarOpen) {
+      window.lumeSetSidebarOpen(true);
+    }
     if (window.lumeBeginRoadworkDetails) {
       window.lumeBeginRoadworkDetails();
     }
@@ -895,7 +936,11 @@ setInterval(renderStatus, 10000);
     });
 
     map.on("click", event => {
-      if (!snapshot || !map.getLayer("roadworks-visible")) return;
+      if (
+        window.lumeChoosingMapPoint ||
+        !snapshot ||
+        !map.getLayer("roadworks-visible")
+      ) return;
 
       const tolerance = 10;
       const hits = map.queryRenderedFeatures(
@@ -1743,6 +1788,10 @@ setInterval(renderStatus, 10000);
       ? "Auswahl abbrechen"
       : "Punkt auf Karte wählen";
     if (map) map.getCanvas().style.cursor = value ? "crosshair" : "";
+    window.lumeChoosingMapPoint = value;
+    if (value && window.innerWidth <= 760 && window.lumeSetSidebarOpen) {
+      window.lumeSetSidebarOpen(false);
+    }
   }
 
   pick.addEventListener("click", () => {
@@ -1757,6 +1806,9 @@ setInterval(renderStatus, 10000);
   });
 
   function selectLocation(lat, lon, label) {
+    if (window.lumeSetSidebarOpen) {
+      window.lumeSetSidebarOpen(true);
+    }
     if (window.lumeClearRoadworkSelection) {
       window.lumeClearRoadworkSelection();
     }
@@ -2051,9 +2103,10 @@ setInterval(renderStatus, 10000);
 
           if (!bounds.isEmpty()) {
             map.fitBounds(bounds, {
-              padding: window.innerWidth > 900
-                ? { top: 60, bottom: 60, left: 470, right: 60 }
-                : { top: 80, bottom: 80, left: 30, right: 30 },
+              padding: window.lumeMapPadding
+                ? window.lumeMapPadding()
+                : { top: 100, bottom: 90, left: 30, right: 30 },
+              retainPadding: false,
               maxZoom: 16
             });
           }
@@ -2327,6 +2380,814 @@ setInterval(renderStatus, 10000);
     message.textContent =
       "Suche eine Straße oder einen Ort, um Einträge in der Nähe zu finden.";
   }
+})();
+</script>
+
+
+<style id="lume-app-shell-style">
+  :root {
+    --sidebar-width: 390px;
+  }
+
+  html, body {
+    background: #edf1ed;
+  }
+
+  #map {
+    position: fixed;
+    height: 100%;
+    height: 100dvh;
+  }
+
+  .lume-floating-brand {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 22px;
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    background: rgba(246, 243, 236, 0.96);
+    color: var(--text-primary);
+    box-shadow: 0 8px 30px #16302418;
+    backdrop-filter: blur(16px);
+    pointer-events: none;
+  }
+
+  .brand-dot {
+    width: 12px;
+    height: 12px;
+    border: 3px solid #d5e6db;
+    border-radius: 50%;
+    background: #2b5740;
+  }
+
+  .lume-floating-brand h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    white-space: nowrap;
+  }
+
+  .lume-floating-brand p {
+    margin-top: 3px;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .lume-map-button,
+  .lume-basemap-switch {
+    position: fixed;
+    z-index: 26;
+    top: 23px;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    background: rgba(246, 243, 236, 0.97);
+    color: var(--text-primary);
+    box-shadow: 0 5px 20px #16302414;
+  }
+
+  .lume-map-button {
+    left: 20px;
+    min-height: 44px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .lume-map-button > span:first-child {
+    font-size: 1.05rem;
+  }
+
+  .lume-basemap-switch {
+    right: 20px;
+    display: flex;
+    padding: 4px;
+    gap: 3px;
+  }
+
+  .lume-basemap-switch[hidden],
+  .lume-map-status[hidden] {
+    display: none;
+  }
+
+  .lume-basemap-switch button {
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .lume-basemap-switch button[aria-pressed="true"] {
+    background: var(--olive-dark);
+    color: white;
+  }
+
+  body .telemetry-stack,
+  body.lume-map-unavailable .telemetry-stack {
+    position: fixed;
+    top: 94px;
+    left: 20px;
+    bottom: 88px;
+    width: min(var(--sidebar-width), calc(100vw - 40px));
+    max-width: none;
+    max-height: none;
+    gap: 12px;
+    z-index: 20;
+    padding: 0 3px 12px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transition:
+      transform 0.22s ease,
+      opacity 0.22s ease,
+      visibility 0.22s;
+    scroll-padding-top: 88px;
+  }
+
+  body.sidebar-is-closed .telemetry-stack {
+    transform: translateX(calc(-100% - 24px));
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .sidebar-heading {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    background: #f6f3ec;
+    color: var(--text-primary);
+    box-shadow: 0 5px 14px #1630240d;
+  }
+
+  .sidebar-heading strong {
+    font-size: 0.9rem;
+  }
+
+  .sidebar-heading p {
+    font-size: 0.68rem;
+    margin-top: 4px;
+    color: var(--text-muted);
+  }
+
+  #sidebar-close {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    background: #e4ece6;
+    color: #163024;
+    cursor: pointer;
+    font-size: 1.8rem;
+    line-height: 1;
+  }
+
+  .city-data-heading {
+    font-size: 0.9rem;
+    margin: 12px 0;
+  }
+
+  .telemetry-stack .nearby-panel {
+    padding: 18px;
+  }
+
+  .nearby-panel h2 {
+    font-size: 1rem;
+  }
+
+  .nearby-controls button,
+  .nearby-controls select {
+    min-height: 44px;
+  }
+
+  #nearby-pick[hidden] {
+    display: none;
+  }
+
+  .nearby-panel input {
+    font-size: 16px;
+  }
+
+  #nearby-results button,
+  #place-search-results button {
+    background: #ffffff55;
+  }
+
+  #nearby-results button:hover,
+  #place-search-results button:hover {
+    background: #e4ece6;
+  }
+
+  .lume-map-status {
+    position: fixed;
+    top: 88px;
+    right: 20px;
+    z-index: 24;
+    max-width: min(340px, calc(100vw - 40px));
+    padding: 10px 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    background: #f6f3ec;
+    color: var(--text-primary);
+    font-size: 0.72rem;
+    line-height: 1.5;
+    box-shadow: 0 5px 20px #16302414;
+  }
+
+  body .utility-bar {
+    position: fixed;
+    right: 16px;
+    bottom: 34px;
+    left: auto;
+    padding: 8px 12px;
+    max-width: calc(100vw - 32px);
+    font-size: 0.65rem;
+    z-index: 15;
+  }
+
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
+    margin-bottom: 92px;
+    margin-right: 16px;
+  }
+
+  .maplibregl-ctrl-attrib {
+    max-width: calc(100vw - 16px);
+    font-size: 10px;
+  }
+
+  body.lume-map-unavailable .telemetry-stack {
+    left: 50%;
+    width: min(640px, calc(100vw - 40px));
+    transform: translateX(-50%);
+  }
+
+  body.lume-map-unavailable.sidebar-is-closed .telemetry-stack {
+    transform: translate(-150%, 0);
+  }
+
+  .lume-map-button:focus-visible,
+  .lume-basemap-switch button:focus-visible,
+  #sidebar-close:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 760px) {
+    .lume-floating-brand {
+      top: max(12px, env(safe-area-inset-top));
+      padding: 10px 20px;
+      border-radius: 16px;
+    }
+
+    .lume-floating-brand h1 {
+      font-size: 1.12rem;
+    }
+
+    .lume-map-button {
+      top: 84px;
+      left: 12px;
+    }
+
+    .lume-basemap-switch {
+      top: 84px;
+      right: 12px;
+    }
+
+    .lume-basemap-switch button {
+      padding: 8px 10px;
+    }
+
+    body .telemetry-stack,
+    body.lume-map-unavailable .telemetry-stack {
+      top: 144px;
+      left: 12px;
+      bottom: 92px;
+      width: calc(100vw - 24px);
+      max-height: none;
+      transform: none;
+      padding-right: 0;
+    }
+
+    body.sidebar-is-closed .telemetry-stack,
+    body.lume-map-unavailable.sidebar-is-closed .telemetry-stack {
+      transform: translateX(calc(-100% - 24px));
+    }
+
+    .lume-map-status {
+      top: auto;
+      bottom: 100px;
+      left: 12px;
+      right: 12px;
+      max-width: none;
+    }
+
+    body .utility-bar {
+      left: 12px;
+      right: 12px;
+      bottom: 36px;
+      justify-content: center;
+      padding: 7px 10px;
+      gap: 6px 12px;
+    }
+  }
+
+  @media (max-width: 350px) {
+    .lume-map-button {
+      padding: 10px;
+      gap: 6px;
+      font-size: 0.72rem;
+    }
+
+    .lume-basemap-switch button {
+      padding: 8px;
+      font-size: 0.72rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body .telemetry-stack {
+      transition: none;
+    }
+  }
+</style>
+
+<script id="lume-app-shell">
+(() => {
+  const sidebar = document.getElementById("lume-sidebar");
+  const toggle = document.getElementById("sidebar-toggle");
+  const close = document.getElementById("sidebar-close");
+  const nearby = document.querySelector(".nearby-panel");
+  const cockpit = document.querySelector(".cockpit-top-left");
+  const filters = document.querySelector(".filter-dock");
+  const inspector = document.querySelector(".inspector-dock");
+  const heading = document.querySelector(".sidebar-heading");
+  const notice = document.querySelector(".map-fallback-notice");
+
+  if (!sidebar || !nearby) return;
+
+  sidebar.replaceChildren(
+    heading,
+    ...(notice ? [notice] : []),
+    nearby,
+    filters,
+    cockpit,
+    inspector
+  );
+
+  let isOpen = true;
+  const compact = window.matchMedia("(max-width: 760px)");
+
+  window.lumeSetSidebarOpen = (open, focus = false) => {
+    isOpen = Boolean(open);
+    document.body.classList.toggle("sidebar-is-closed", !isOpen);
+    sidebar.inert = !isOpen;
+    sidebar.setAttribute("aria-hidden", String(!isOpen));
+    toggle.setAttribute("aria-expanded", String(isOpen));
+    toggle.setAttribute(
+      "aria-label",
+      isOpen
+        ? "Suche und Infos einklappen"
+        : "Suche und Infos öffnen"
+    );
+
+    if (!isOpen && sidebar.contains(document.activeElement)) {
+      toggle.focus();
+    }
+
+    if (focus && isOpen) {
+      document.getElementById("place-search-input").focus({
+        preventScroll: true
+      });
+    }
+  };
+
+  window.lumeMapPadding = () => {
+    const height = window.innerHeight;
+
+    return {
+      top: Math.min(
+        compact.matches ? 150 : 100,
+        Math.max(20, height / 3)
+      ),
+      bottom: Math.min(90, Math.max(20, height / 5)),
+      left: !compact.matches && isOpen
+        ? Math.min(440, window.innerWidth * 0.45)
+        : 30,
+      right: 30
+    };
+  };
+
+  toggle.addEventListener("click", () => {
+    window.lumeSetSidebarOpen(!isOpen, !isOpen);
+  });
+
+  close.addEventListener("click", () => {
+    window.lumeSetSidebarOpen(false);
+  });
+
+  document.addEventListener("keydown", event => {
+    if (
+      event.key === "Escape" &&
+      isOpen &&
+      !window.lumeChoosingMapPoint
+    ) {
+      window.lumeSetSidebarOpen(false);
+    }
+  });
+
+  compact.addEventListener("change", () => {
+    window.lumeSetSidebarOpen(!compact.matches || !map);
+  });
+
+  window.lumeSetSidebarOpen(!compact.matches || !map);
+
+  const switches = document.getElementById("basemap-switch");
+  const status = document.getElementById("basemap-status");
+
+  if (!map) return;
+
+  switches.hidden = false;
+
+  const buttons = [...switches.querySelectorAll("button")];
+  const sourceId = "lume-geosn-aerial";
+  const layerId = "lume-geosn-aerial-layer";
+
+  let aerial = false;
+  let baseLayers = [];
+  let imageryLoaded = false;
+  let timeout = null;
+  let failed = false;
+
+  function announce(text) {
+    status.textContent = text;
+    status.hidden = !text;
+  }
+
+  function updateButtons() {
+    for (const button of buttons) {
+      button.setAttribute(
+        "aria-pressed",
+        String((button.dataset.basemap === "aerial") === aerial)
+      );
+    }
+  }
+
+  function streetMode(message = "") {
+    aerial = false;
+    clearTimeout(timeout);
+
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", "none");
+    }
+
+    for (const layer of baseLayers) {
+      if (map.getLayer(layer.id)) {
+        map.setLayoutProperty(
+          layer.id,
+          "visibility",
+          layer.visibility
+        );
+      }
+    }
+
+    updateButtons();
+    announce(message);
+  }
+
+  function aerialMode() {
+    if (!map.isStyleLoaded()) {
+      announce(
+        "Die Karte wird noch geladen. Bitte gleich erneut versuchen."
+      );
+      return;
+    }
+
+    failed = false;
+
+    try {
+      if (!map.getSource(sourceId)) {
+        const layers = map.getStyle().layers;
+
+        baseLayers = layers.filter(layer =>
+          layer.id !== layerId &&
+          !layer.id.startsWith("roadworks") &&
+          !layer.id.startsWith("selected-roadwork") &&
+          layer.type !== "symbol"
+        ).map(layer => ({
+          id: layer.id,
+          visibility: layer.layout?.visibility || "visible"
+        }));
+
+        map.addSource(sourceId, {
+          type: "raster",
+          tiles: [
+            "https://geodienste.sachsen.de/wms_geosn_dop-rgb/guest?" +
+            "SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" +
+            "&LAYERS=sn_dop_020&STYLES=&FORMAT=image/jpeg" +
+            "&SRS=EPSG:3857&BBOX={bbox-epsg-3857}" +
+            "&WIDTH=256&HEIGHT=256"
+          ],
+          tileSize: 256,
+          maxzoom: 19,
+          bounds: [11.67, 50.0, 15.05, 51.8],
+          attribution:
+            'Luftbild: <a href="https://www.landesvermessung.sachsen.de/luftbild-produkte-4982.html" target="_blank" rel="noopener">GeoSN</a>' +
+            ' · <a href="https://www.govdata.de/dl-de/by-2-0" target="_blank" rel="noopener">dl-de/by-2-0</a>'
+        });
+
+        const before = layers.find(layer =>
+          layer.type === "symbol" ||
+          layer.id.startsWith("roadworks") ||
+          layer.id.startsWith("selected-roadwork")
+        );
+
+        map.addLayer({
+          id: layerId,
+          type: "raster",
+          source: sourceId,
+          layout: { visibility: "none" },
+          paint: { "raster-fade-duration": 200 }
+        }, before?.id);
+      }
+
+      aerial = true;
+
+      for (const layer of baseLayers) {
+        map.setLayoutProperty(layer.id, "visibility", "none");
+      }
+
+      map.setLayoutProperty(layerId, "visibility", "visible");
+      updateButtons();
+
+      announce(
+        imageryLoaded
+          ? "Luftbild · GeoSN. Aufnahmedatum je Gebiet unterschiedlich; keine Live-Aufnahme."
+          : "Luftbild wird geladen …"
+      );
+
+      clearTimeout(timeout);
+
+      timeout = setTimeout(() => {
+        if (aerial && !imageryLoaded) {
+          streetMode(
+            "Luftbild nicht verfügbar. Die Kartenansicht bleibt nutzbar."
+          );
+        }
+      }, 20000);
+
+    } catch (error) {
+      streetMode(
+        "Luftbild konnte nicht geladen werden. Bitte später erneut versuchen."
+      );
+      console.warn("Aerial imagery unavailable:", error.message);
+    }
+  }
+
+  for (const button of buttons) {
+    button.addEventListener("click", () => {
+      if (button.dataset.basemap === "street") {
+        streetMode();
+      } else {
+        aerialMode();
+      }
+    });
+  }
+
+  map.on("sourcedata", event => {
+    if (
+      event.sourceId !== sourceId ||
+      !event.isSourceLoaded ||
+      failed
+    ) return;
+
+    imageryLoaded = true;
+    clearTimeout(timeout);
+
+    if (aerial) {
+      announce(
+        "Luftbild · GeoSN. Aufnahmedatum je Gebiet unterschiedlich; keine Live-Aufnahme."
+      );
+    }
+  });
+
+  map.on("error", event => {
+    if (event.sourceId !== sourceId) return;
+
+    failed = true;
+    imageryLoaded = false;
+
+    streetMode(
+      "Luftbild nicht verfügbar. Die Kartenansicht bleibt nutzbar."
+    );
+  });
+})();
+</script>
+
+
+<style id="lume-weather-view-style">
+  .telemetry-stack > [hidden] {
+    display: none !important;
+  }
+
+  #sidebar-weather-view {
+    flex-shrink: 0;
+    width: 100%;
+  }
+
+  #sidebar-weather-view .cockpit-top-left {
+    position: static;
+    width: 100%;
+    margin: 0;
+  }
+
+  .sidebar-heading > div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  #sidebar-weather-toggle {
+    flex-shrink: 0;
+    min-height: 44px;
+    max-width: 112px;
+    padding: 8px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    background: #e4ece6;
+    color: #163024;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  #sidebar-weather-toggle:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 3px;
+  }
+
+  .lume-floating-brand {
+    animation: lume-brand-glow 5s ease-in-out infinite;
+  }
+
+  .lume-floating-brand .brand-dot {
+    animation: lume-brand-dot 3s ease-in-out infinite;
+  }
+
+  @keyframes lume-brand-glow {
+    0%, 100% {
+      box-shadow:
+        0 8px 30px #16302418,
+        0 0 0 0 #70ffe500;
+    }
+    50% {
+      box-shadow:
+        0 8px 30px #16302425,
+        0 0 22px 3px #70ffe54d;
+    }
+  }
+
+  @keyframes lume-brand-dot {
+    0%, 100% {
+      box-shadow: 0 0 0 0 #2e8b5700;
+    }
+    50% {
+      box-shadow: 0 0 0 5px #2e8b5726;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .sidebar-heading {
+      padding: 10px;
+      gap: 6px;
+    }
+
+    .sidebar-heading strong {
+      font-size: 0.8rem;
+    }
+
+    .sidebar-heading p {
+      font-size: 0.63rem;
+    }
+
+    #sidebar-weather-toggle {
+      max-width: 94px;
+      padding: 8px;
+      font-size: 0.68rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lume-floating-brand,
+    .lume-floating-brand .brand-dot {
+      animation: none !important;
+    }
+  }
+</style>
+
+<script id="lume-weather-view">
+(() => {
+  const sidebar = document.getElementById("lume-sidebar");
+  const header = sidebar?.querySelector(".sidebar-heading");
+  const cockpit = document.querySelector(".cockpit-top-left");
+  const nearby = document.querySelector(".nearby-panel");
+  const inspector = document.querySelector(".inspector-dock");
+  const filters = document.querySelector(".filter-dock");
+
+  if (!header || !cockpit || !nearby || !inspector || !filters) return;
+
+  // Weather gets its own view within the left sidebar.
+  const weatherView = document.createElement("div");
+  weatherView.id = "sidebar-weather-view";
+  weatherView.hidden = true;
+  weatherView.append(cockpit);
+  sidebar.append(weatherView);
+
+  // Results and restriction details stay directly together.
+  nearby.after(inspector);
+  inspector.after(filters);
+
+  const switcher = document.createElement("button");
+  switcher.type = "button";
+  switcher.id = "sidebar-weather-toggle";
+  switcher.setAttribute("aria-controls", weatherView.id);
+  switcher.setAttribute("aria-expanded", "false");
+  switcher.textContent = "Wetter & Pegel";
+
+  header.insertBefore(
+    switcher,
+    document.getElementById("sidebar-close")
+  );
+
+  const title = header.querySelector("strong");
+  const subtitle = header.querySelector("p");
+  let showingWeather = false;
+
+  function setView(weather, focus = false) {
+    showingWeather = weather;
+    weatherView.hidden = !weather;
+
+    for (const panel of [nearby, inspector, filters]) {
+      panel.hidden = weather;
+    }
+
+    switcher.textContent = weather
+      ? "← Suche"
+      : "Wetter & Pegel";
+    switcher.setAttribute("aria-expanded", String(weather));
+
+    title.textContent = weather
+      ? "Wetter & Stadtdaten"
+      : "Was ist in deiner Nähe?";
+
+    subtitle.textContent = weather
+      ? "Wetter, Elbepegel und Datenstand."
+      : "Ort wählen. Einschränkungen entdecken.";
+
+    sidebar.scrollTop = 0;
+
+    if (focus && !weather) {
+      document.getElementById("place-search-input").focus({
+        preventScroll: true
+      });
+    }
+  }
+
+  switcher.addEventListener("click", () => {
+    setView(!showingWeather, true);
+  });
+
+  // Selecting a road reveals its details, even from the weather view.
+  const openSidebar = window.lumeSetSidebarOpen;
+
+  window.lumeSetSidebarOpen = (open, focus = false) => {
+    if (open && showingWeather) setView(false);
+    openSidebar(open, focus);
+  };
 })();
 </script>
 
