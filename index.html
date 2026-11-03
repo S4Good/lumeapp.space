@@ -404,7 +404,7 @@
   <button type="button" id="sidebar-toggle" class="lume-map-button"
           aria-controls="lume-sidebar" aria-expanded="true">
     <span aria-hidden="true">☰</span>
-    <span>Suche &amp; Infos</span>
+    <span>Suche &amp; Umgebung</span>
   </button>
 
   <div id="basemap-switch" class="lume-basemap-switch"
@@ -423,7 +423,7 @@
 
 
   <div class="telemetry-stack" id="lume-sidebar"
-       role="region" aria-label="Suche und Stadtinformationen">
+       role="region" aria-label="Suche und Umgebung">
     <div class="sidebar-heading">
       <div>
         <strong>Was ist in deiner Nähe?</strong>
@@ -1813,6 +1813,7 @@ setInterval(renderStatus, 10000);
       window.lumeClearRoadworkSelection();
     }
     selected = { lat, lon };
+    resetBriefing();
     setChoosing(false);
     locationLabel.textContent = "Gewählter Ort: " + label;
     resetButton.hidden = false;
@@ -1852,6 +1853,7 @@ setInterval(renderStatus, 10000);
     if (controller) controller.abort();
 
     selected = null;
+    resetBriefing();
     setChoosing(false);
     if (marker) {
       marker.remove();
@@ -1990,7 +1992,339 @@ setInterval(renderStatus, 10000);
     }
   });
 
+
+  const briefingSection = document.createElement("section");
+  briefingSection.className = "lume-briefing";
+  briefingSection.innerHTML = `
+    <button type="button" id="briefing-show" disabled>
+      Briefing anzeigen
+    </button>
+    <p id="briefing-message" class="nearby-note" role="status"></p>
+    <div id="briefing-output" role="region"
+         aria-label="Mein Lume-Briefing" hidden></div>
+  `;
+  panel.querySelector(".nearby-controls").after(briefingSection);
+
+  const briefingButton = briefingSection.querySelector("#briefing-show");
+  const briefingMessage = briefingSection.querySelector("#briefing-message");
+  const briefingOutput = briefingSection.querySelector("#briefing-output");
+
+  let briefingController = null;
+  let briefingVersion = 0;
+
+  function resetBriefing() {
+    briefingVersion++;
+    if (briefingController) briefingController.abort();
+    briefingOutput.replaceChildren();
+    briefingOutput.hidden = true;
+    briefingButton.disabled = !selected;
+    briefingButton.textContent = "Briefing anzeigen";
+    briefingMessage.textContent = selected
+      ? "Zusammenfassung für den gewählten Ort und Umkreis."
+      : "Wähle zuerst einen Ort für dein Briefing.";
+  }
+
+  resetBriefing();
+
+  function briefingNode(tag, text, parent) {
+    const node = document.createElement(tag);
+    node.textContent = text;
+    if (parent) parent.append(node);
+    return node;
+  }
+
+  function renderBriefing(data) {
+    const labels = {
+      ok: "aktuell",
+      stale: "veraltet",
+      unavailable: "nicht verfügbar",
+      not_connected: "nicht angebunden"
+    };
+
+    const number = value => new Intl.NumberFormat("de-DE", {
+      maximumFractionDigits: 1
+    }).format(value);
+
+    const date = value => value
+      ? value.split("-").reverse().join(".")
+      : "nicht angegeben";
+
+    const part = (title, status) => {
+      const section = document.createElement("section");
+      section.className = "briefing-part";
+      briefingNode("h4", title, section);
+      briefingNode("p", "Datenstatus: " + labels[status], section);
+      briefingOutput.append(section);
+      return section;
+    };
+
+    const sourceNote = (id, parent) => {
+      const source = data.sources.find(item => item.id === id);
+      briefingNode(
+        "p",
+        "Quelle: " + source.name +
+          (source.fetched_at
+            ? " · Abruf: " + formatTime(source.fetched_at)
+            : " · kein Datenstand verfügbar"),
+        parent
+      ).className = "briefing-source";
+    };
+
+    briefingOutput.replaceChildren();
+    briefingNode("h3", "Mein Lume-Briefing", briefingOutput);
+    briefingNode(
+      "p",
+      "Erstellt: " + formatTime(data.generated_at) +
+        " · Zeiten: Europe/Berlin. Status bei Erstellung; " +
+        "keine automatische Aktualisierung.",
+      briefingOutput
+    ).className = "nearby-note";
+
+    const roads = part(
+      "Lage in deiner Nähe",
+      data.data_status.roadworks
+    );
+    briefingNode("p", data.summary.text, roads);
+
+    if (data.data_status.roadworks !== "unavailable") {
+      const nearest = data.events.find(
+        item => item.source_id === data.summary.nearest_source_id
+      );
+
+      if (nearest) {
+        briefingNode(
+          "strong",
+          "Nächstgelegener Eintrag: " +
+            (nearest.street || "Straßenabschnitt"),
+          roads
+        );
+        briefingNode(
+          "p",
+          (nearest.restriction_type || "Art nicht angegeben") +
+            " · " + nearest.distance_m +
+            " m Luftlinie zum Abschnitt",
+          roads
+        );
+        briefingNode(
+          "p",
+          "Veröffentlichter Zeitraum: " +
+            date(nearest.starts_on) + " bis " + date(nearest.ends_on),
+          roads
+        );
+        if (nearest.reason) {
+          briefingNode("p", nearest.reason.trim(), roads);
+        }
+      } else {
+        briefingNode(
+          "p",
+          "Keine passenden Einträge im geladenen Datensatz. " +
+            "Das bestätigt keine störungsfreie Umgebung.",
+          roads
+        );
+      }
+    }
+
+    sourceNote("roadworks", roads);
+
+    const water = part("Elbe · Pegel Dresden", data.water_level.status);
+    const reading = data.water_level.data;
+
+    if (reading) {
+      briefingNode("strong", number(reading.water_level_cm) + " cm", water);
+      briefingNode(
+        "p", "Gemessen: " + formatTime(reading.measured_at), water
+      );
+    } else {
+      briefingNode("p", "Kein verifizierter Messwert verfügbar.", water);
+    }
+
+    sourceNote("water_level", water);
+
+    const weather = part(
+      "Wetter für Dresden · Modellschätzung",
+      data.weather.status
+    );
+    const current = data.weather.current;
+
+    if (current) {
+      briefingNode("strong", number(current.temperature_c) + " °C", weather);
+      briefingNode(
+        "p",
+        "Gefühlt " + number(current.feels_like_c) +
+          " °C · Wind " + number(current.wind_speed_kmh) + " km/h",
+        weather
+      );
+      briefingNode(
+        "p", "Gültig: " + formatTime(current.valid_at), weather
+      );
+    } else {
+      briefingNode("p", "Keine Wetterdaten verfügbar.", weather);
+    }
+
+    briefingNode(
+      "p",
+      "Modellraster für Dresden, keine Messung an der gewählten Straße.",
+      weather
+    );
+    sourceNote("weather", weather);
+    briefingNode("p", data.weather.warning_note, weather);
+
+    briefingNode(
+      "p", data.limitations[0], briefingOutput
+    ).className = "briefing-limitation";
+
+    const details = document.createElement("details");
+    briefingNode("summary", "Quellen & weitere Hinweise", details);
+    const list = document.createElement("ul");
+
+    for (const source of data.sources) {
+      const item = document.createElement("li");
+      const link = briefingNode("a", source.name, item);
+      link.href = source.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      list.append(item);
+    }
+
+    for (const limitation of data.limitations.slice(1)) {
+      briefingNode("li", limitation, list);
+    }
+
+    details.append(list);
+    briefingOutput.append(details);
+    briefingOutput.hidden = false;
+  }
+
+  function validateBriefing(data, location, radiusValue) {
+    const states = ["ok", "stale", "unavailable", "not_connected"];
+    const validTime = value => Number.isFinite(Date.parse(value));
+
+    if (
+      data.schema_version !== "1.0" ||
+      !validTime(data.generated_at) ||
+      data.location?.lat !== location.lat ||
+      data.location?.lon !== location.lon ||
+      data.radius_m !== radiusValue ||
+      !data.data_status ||
+      !["roadworks", "water_level", "weather", "weather_warnings"]
+        .every(key => states.includes(data.data_status[key])) ||
+      typeof data.summary?.text !== "string" ||
+      !Array.isArray(data.events) ||
+      !data.events.every(item =>
+        typeof item.source_id === "string" &&
+        Number.isFinite(item.distance_m)
+      ) ||
+      !states.includes(data.water_level?.status) ||
+      !states.includes(data.weather?.status) ||
+      typeof data.weather.warning_note !== "string" ||
+      !Array.isArray(data.limitations) ||
+      !data.limitations.length ||
+      !data.limitations.every(item => typeof item === "string") ||
+      !Array.isArray(data.sources)
+    ) {
+      throw new Error("Die Briefing-Antwort ist ungültig.");
+    }
+
+    for (const id of ["roadworks", "water_level", "weather"]) {
+      const source = data.sources.find(item => item.id === id);
+      if (
+        !source ||
+        typeof source.name !== "string" ||
+        new URL(source.url).protocol !== "https:" ||
+        (source.fetched_at !== null && !validTime(source.fetched_at))
+      ) {
+        throw new Error("Die Quellenangaben sind ungültig.");
+      }
+    }
+
+    const water = data.water_level.data;
+    if (
+      water &&
+      (!Number.isFinite(water.water_level_cm) ||
+       !validTime(water.measured_at))
+    ) {
+      throw new Error("Der Pegelwert ist ungültig.");
+    }
+
+    const weather = data.weather.current;
+    if (
+      weather &&
+      (![weather.temperature_c, weather.feels_like_c, weather.wind_speed_kmh]
+        .every(Number.isFinite) ||
+       !validTime(weather.valid_at))
+    ) {
+      throw new Error("Die Wetterdaten sind ungültig.");
+    }
+  }
+
+  briefingButton.addEventListener("click", async () => {
+    if (!selected) return;
+
+    const location = { ...selected };
+    const radiusValue = Number(radius.value);
+    const requestVersion = ++briefingVersion;
+
+    if (briefingController) briefingController.abort();
+    const active = new AbortController();
+    briefingController = active;
+    const timeout = setTimeout(() => active.abort(), 45000);
+
+    briefingButton.disabled = true;
+    briefingOutput.hidden = true;
+    briefingOutput.replaceChildren();
+    briefingMessage.textContent = "Briefing wird erstellt …";
+
+    try {
+      const response = await fetch(
+        "https://api.lumeapp.space/api/v1/briefing",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...location,
+            radius_m: radiusValue
+          }),
+          cache: "no-store",
+          signal: active.signal
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Briefing derzeit nicht verfügbar (HTTP " +
+          response.status + ")."
+        );
+      }
+
+      const data = await response.json();
+      if (requestVersion !== briefingVersion) return;
+
+      validateBriefing(data, location, radiusValue);
+      renderBriefing(data);
+
+      briefingMessage.textContent =
+        "Briefing erstellt. Die Datenstände stehen bei den jeweiligen Quellen.";
+      briefingButton.textContent = "Briefing aktualisieren";
+
+    } catch (error) {
+      if (requestVersion !== briefingVersion) return;
+
+      briefingOutput.hidden = true;
+      briefingOutput.replaceChildren();
+      briefingMessage.textContent = error.name === "AbortError"
+        ? "Der Abruf hat zu lange gedauert. Bitte erneut versuchen."
+        : error.message;
+
+    } finally {
+      clearTimeout(timeout);
+      if (requestVersion === briefingVersion) {
+        briefingButton.disabled = !selected;
+      }
+    }
+  });
+
   radius.addEventListener("change", () => {
+    resetBriefing();
     if (selected) loadNearby();
   });
 
@@ -2771,8 +3105,8 @@ setInterval(renderStatus, 10000);
     toggle.setAttribute(
       "aria-label",
       isOpen
-        ? "Suche und Infos einklappen"
-        : "Suche und Infos öffnen"
+        ? "Suche und Umgebung einklappen"
+        : "Suche und Umgebung öffnen"
     );
 
     if (!isOpen && sidebar.contains(document.activeElement)) {
@@ -3009,185 +3343,627 @@ setInterval(renderStatus, 10000);
 </script>
 
 
-<style id="lume-weather-view-style">
-  .telemetry-stack > [hidden] {
+
+
+
+
+
+<style id="lume-briefing-style">
+  .lume-briefing {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+  }
+  #briefing-show {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: #163024;
+    color: white;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #briefing-show:disabled { opacity: .5; cursor: default; }
+  #briefing-show:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 3px;
+  }
+  #briefing-output[hidden] { display: none; }
+  #briefing-output { margin-top: 14px; overflow-wrap: anywhere; }
+  #briefing-output h3 { font-size: 1rem; }
+  #briefing-output h4 { margin-bottom: 5px; font-size: .84rem; }
+  #briefing-output p { margin-top: 6px; line-height: 1.55; }
+  .briefing-part {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    background: #ffffff55;
+  }
+  .briefing-part > strong { display: block; margin-top: 8px; }
+  .briefing-source { font-size: .68rem; color: var(--text-muted); }
+  .briefing-limitation { padding: 10px 0; font-weight: 600; }
+  #briefing-output summary {
+    min-height: 44px;
+    padding: 10px 0;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  #briefing-output ul { padding-left: 18px; }
+  #briefing-output li { margin-bottom: 8px; line-height: 1.5; }
+  #briefing-output a { color: var(--olive-accent); }
+</style>
+
+
+<style id="lume-layout-refinement-style">
+  body .telemetry-stack {
+    scroll-padding-top: 78px;
+  }
+
+  .sidebar-heading > div { min-width: 0; }
+  .sidebar-heading strong { font-size: .92rem; }
+
+  .telemetry-stack > [hidden],
+  #weather-drawer[hidden],
+  .nearby-note[hidden] {
     display: none !important;
   }
 
-  #sidebar-weather-view {
-    flex-shrink: 0;
-    width: 100%;
+  .telemetry-stack .filter-dock {
+    padding: 8px;
+    gap: 4px;
   }
 
-  #sidebar-weather-view .cockpit-top-left {
+  .filter-dock .dock-btn {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+
+  .nearby-panel h2 { display: none; }
+  #nearby-location { font-size: .78rem; }
+
+  #weather-drawer-toggle {
+    left: auto;
+    right: 20px;
+    top: 94px;
+  }
+
+  .lume-weather-drawer {
+    position: fixed;
+    z-index: 22;
+    top: 150px;
+    right: 20px;
+    bottom: 94px;
+    width: min(340px, calc(100vw - 40px));
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .lume-weather-drawer > * { flex-shrink: 0; }
+  .lume-weather-drawer .sidebar-heading { top: 0; }
+
+  .lume-weather-drawer .cockpit-top-left {
     position: static;
     width: 100%;
-    margin: 0;
+    padding: 18px;
   }
 
-  .sidebar-heading > div {
-    flex: 1;
-    min-width: 0;
-  }
+  .lume-weather-drawer .city-data-heading { display: none; }
 
-  #sidebar-weather-toggle {
-    flex-shrink: 0;
-    min-height: 44px;
-    max-width: 112px;
-    padding: 8px 10px;
+  .weather-drawer-close {
+    width: 44px;
+    height: 44px;
     border: 1px solid var(--card-border);
     border-radius: 10px;
     background: #e4ece6;
     color: #163024;
-    font: inherit;
-    font-size: 0.72rem;
-    font-weight: 700;
+    font-size: 1.5rem;
     cursor: pointer;
   }
 
-  #sidebar-weather-toggle:focus-visible {
+  .lume-map-status {
+    top: auto;
+    bottom: 94px;
+    right: 20px;
+  }
+
+  body.weather-is-open .lume-map-status { right: 380px; }
+
+  .search-source-short {
+    padding: 4px 0;
+    margin: 2px 0 10px;
+    border: 0;
+    background: none;
+    color: var(--olive-accent);
+    font: inherit;
+    font-size: .74rem;
+    text-align: left;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  body .utility-bar { align-items: center; }
+
+  #lume-source-open {
+    padding: 4px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--olive-accent);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  #lume-source-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(620px, calc(100vw - 32px));
+    max-height: calc(100dvh - 40px);
+    overflow: auto;
+    padding: 22px;
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    background: #f6f3ec;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: .86rem;
+  }
+
+  #lume-source-dialog::backdrop {
+    background: #10281dcc;
+    backdrop-filter: blur(4px);
+  }
+
+  .source-dialog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .source-dialog-heading h2 { font-size: 1.15rem; }
+
+  .source-dialog-heading button {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background: #e4ece6;
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+
+  #lume-source-dialog h3 {
+    margin-top: 20px;
+    font-size: .95rem;
+  }
+
+  #lume-source-dialog p,
+  #lume-source-dialog li {
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  #lume-source-dialog a { color: #245b42; }
+  #lume-source-dialog ul { padding-left: 18px; }
+
+  #lume-source-dialog .roadworks-note {
+    font-size: inherit;
+    padding: 0;
+  }
+
+  #briefing-source-notes { margin-top: 16px; }
+
+  #briefing-source-notes summary {
+    padding: 12px 0;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  #lume-source-dialog button:focus-visible,
+  .search-source-short:focus-visible,
+  #weather-drawer-toggle:focus-visible,
+  .weather-drawer-close:focus-visible,
+  #lume-source-open:focus-visible {
     outline: 3px solid #327b9a;
     outline-offset: 3px;
   }
 
   .lume-floating-brand {
-    animation: lume-brand-glow 5s ease-in-out infinite;
+    isolation: isolate;
+    animation: lume-brand-radiance 4s ease-in-out infinite !important;
   }
 
-  .lume-floating-brand .brand-dot {
-    animation: lume-brand-dot 3s ease-in-out infinite;
+  .lume-floating-brand::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    z-index: -1;
+    border: 2px solid #70ffe580;
+    border-radius: inherit;
+    filter: blur(3px);
+    pointer-events: none;
   }
 
-  @keyframes lume-brand-glow {
+  .lume-floating-brand h1 {
+    background: linear-gradient(
+      100deg, #163024 15%, #245b42 40%,
+      #168c77 50%, #163024 70%
+    );
+    background-size: 250% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: lume-brand-shimmer 7s ease-in-out infinite;
+  }
+
+  @keyframes lume-brand-radiance {
     0%, 100% {
-      box-shadow:
-        0 8px 30px #16302418,
-        0 0 0 0 #70ffe500;
+      box-shadow: 0 8px 28px #16302430, 0 0 18px #70ffe550;
     }
     50% {
-      box-shadow:
-        0 8px 30px #16302425,
-        0 0 22px 3px #70ffe54d;
+      box-shadow: 0 8px 32px #16302440, 0 0 34px 8px #70ffe580;
     }
   }
 
-  @keyframes lume-brand-dot {
-    0%, 100% {
-      box-shadow: 0 0 0 0 #2e8b5700;
-    }
-    50% {
-      box-shadow: 0 0 0 5px #2e8b5726;
-    }
+  @keyframes lume-brand-shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
 
-  @media (max-width: 380px) {
-    .sidebar-heading {
-      padding: 10px;
-      gap: 6px;
+  @media (max-width: 760px) {
+    #weather-drawer-toggle {
+      top: 138px;
+      right: 12px;
+      min-height: 40px;
+      padding: 8px 12px;
     }
 
-    .sidebar-heading strong {
-      font-size: 0.8rem;
+    body .telemetry-stack,
+    body.lume-map-unavailable .telemetry-stack {
+      top: 190px;
     }
 
-    .sidebar-heading p {
-      font-size: 0.63rem;
+    .lume-weather-drawer {
+      top: 190px;
+      right: 12px;
+      bottom: 94px;
+      width: calc(100vw - 24px);
     }
 
-    #sidebar-weather-toggle {
-      max-width: 94px;
-      padding: 8px;
-      font-size: 0.68rem;
+    body.weather-is-open .lume-map-status,
+    .lume-map-status {
+      left: 12px;
+      right: 12px;
+      bottom: 86px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .lume-floating-brand,
+    .lume-floating-brand h1,
     .lume-floating-brand .brand-dot {
       animation: none !important;
     }
   }
 </style>
 
-<script id="lume-weather-view">
+<script id="lume-layout-refinement">
 (() => {
   const sidebar = document.getElementById("lume-sidebar");
   const header = sidebar?.querySelector(".sidebar-heading");
-  const cockpit = document.querySelector(".cockpit-top-left");
   const nearby = document.querySelector(".nearby-panel");
   const inspector = document.querySelector(".inspector-dock");
   const filters = document.querySelector(".filter-dock");
+  const cockpit = document.querySelector(".cockpit-top-left");
+  const footer = document.querySelector(".utility-bar");
 
-  if (!header || !cockpit || !nearby || !inspector || !filters) return;
+  if (!header || !nearby || !inspector || !filters || !cockpit || !footer) {
+    return;
+  }
 
-  // Weather gets its own view within the left sidebar.
-  const weatherView = document.createElement("div");
-  weatherView.id = "sidebar-weather-view";
-  weatherView.hidden = true;
-  weatherView.append(cockpit);
-  sidebar.append(weatherView);
+  header.querySelector("strong").textContent = "Suche & Umgebung";
+  header.querySelector("p").hidden = true;
+  document.getElementById("sidebar-weather-toggle")?.remove();
 
-  // Results and restriction details stay directly together.
+  header.after(filters);
+  filters.after(nearby);
   nearby.after(inspector);
-  inspector.after(filters);
 
-  const switcher = document.createElement("button");
-  switcher.type = "button";
-  switcher.id = "sidebar-weather-toggle";
-  switcher.setAttribute("aria-controls", weatherView.id);
-  switcher.setAttribute("aria-expanded", "false");
-  switcher.textContent = "Wetter & Pegel";
+  // Separate weather drawer; existing data listeners remain connected.
+  const weatherToggle = document.createElement("button");
+  weatherToggle.type = "button";
+  weatherToggle.id = "weather-drawer-toggle";
+  weatherToggle.className = "lume-map-button";
+  weatherToggle.textContent = "☀ Wetter & Pegel";
+  weatherToggle.setAttribute("aria-expanded", "false");
+  weatherToggle.setAttribute("aria-controls", "weather-drawer");
 
-  header.insertBefore(
-    switcher,
-    document.getElementById("sidebar-close")
-  );
+  const weatherDrawer = document.createElement("aside");
+  weatherDrawer.id = "weather-drawer";
+  weatherDrawer.className = "lume-weather-drawer";
+  weatherDrawer.setAttribute("aria-label", "Wetter und Elbepegel");
+  weatherDrawer.hidden = true;
+  weatherDrawer.inert = true;
 
-  const title = header.querySelector("strong");
-  const subtitle = header.querySelector("p");
-  let showingWeather = false;
+  const weatherHeader = document.createElement("div");
+  weatherHeader.className = "sidebar-heading";
 
-  function setView(weather, focus = false) {
-    showingWeather = weather;
-    weatherView.hidden = !weather;
+  const weatherTitle = document.createElement("strong");
+  weatherTitle.textContent = "Wetter & Pegel";
 
-    for (const panel of [nearby, inspector, filters]) {
-      panel.hidden = weather;
+  const weatherClose = document.createElement("button");
+  weatherClose.type = "button";
+  weatherClose.className = "weather-drawer-close";
+  weatherClose.textContent = "×";
+  weatherClose.setAttribute("aria-label", "Wetter und Pegel schließen");
+
+  weatherHeader.append(weatherTitle, weatherClose);
+  weatherDrawer.append(weatherHeader, cockpit);
+  document.body.append(weatherToggle, weatherDrawer);
+  document.getElementById("sidebar-weather-view")?.remove();
+
+  const phone = window.matchMedia("(max-width: 760px)");
+  const openSearch = window.lumeSetSidebarOpen;
+  let weatherOpen = false;
+
+  function setWeatherOpen(open, focus = false) {
+    weatherOpen = Boolean(open);
+
+    if (weatherOpen && phone.matches) openSearch(false);
+
+    weatherDrawer.hidden = !weatherOpen;
+    weatherDrawer.inert = !weatherOpen;
+    weatherToggle.setAttribute("aria-expanded", String(weatherOpen));
+    document.body.classList.toggle("weather-is-open", weatherOpen);
+
+    if (weatherOpen && focus) {
+      weatherClose.focus({ preventScroll: true });
     }
 
-    switcher.textContent = weather
-      ? "← Suche"
-      : "Wetter & Pegel";
-    switcher.setAttribute("aria-expanded", String(weather));
-
-    title.textContent = weather
-      ? "Wetter & Stadtdaten"
-      : "Was ist in deiner Nähe?";
-
-    subtitle.textContent = weather
-      ? "Wetter, Elbepegel und Datenstand."
-      : "Ort wählen. Einschränkungen entdecken.";
-
-    sidebar.scrollTop = 0;
-
-    if (focus && !weather) {
-      document.getElementById("place-search-input").focus({
-        preventScroll: true
-      });
+    if (!weatherOpen && weatherDrawer.contains(document.activeElement)) {
+      weatherToggle.focus();
     }
   }
 
-  switcher.addEventListener("click", () => {
-    setView(!showingWeather, true);
+  window.lumeSetSidebarOpen = (open, focus = false) => {
+    if (open && phone.matches) setWeatherOpen(false);
+    openSearch(open, focus);
+  };
+
+  weatherToggle.addEventListener("click", () => {
+    setWeatherOpen(!weatherOpen, true);
   });
 
-  // Selecting a road reveals its details, even from the weather view.
-  const openSidebar = window.lumeSetSidebarOpen;
+  weatherClose.addEventListener("click", () => {
+    setWeatherOpen(false);
+  });
 
-  window.lumeSetSidebarOpen = (open, focus = false) => {
-    if (open && showingWeather) setView(false);
-    openSidebar(open, focus);
+  weatherDrawer.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      setWeatherOpen(false);
+    }
+  });
+
+  phone.addEventListener("change", () => {
+    if (phone.matches && weatherOpen) {
+      window.lumeSetSidebarOpen(false);
+    }
+  });
+
+  filters.querySelector(".dock-btn").addEventListener("click", () => {
+    setWeatherOpen(true);
+  });
+
+  // Show the inspector only for an actual restriction selection.
+  inspector.hidden = !window.lumeRoadworkSelected;
+  const previousShowDetails = showDetails;
+
+  showDetails = function(...args) {
+    previousShowDetails(...args);
+    inspector.hidden = !window.lumeRoadworkSelected;
   };
+
+  const endDetails = window.lumeEndRoadworkDetails;
+  window.lumeEndRoadworkDetails = () => {
+    if (endDetails) endDetails();
+    inspector.hidden = true;
+  };
+
+  const oldPadding = window.lumeMapPadding;
+  window.lumeMapPadding = () => {
+    const padding = oldPadding();
+    if (weatherOpen && window.innerWidth >= 1100) {
+      padding.right = 380;
+    }
+    return padding;
+  };
+
+  // Detailed source notes are accessible through the footer.
+  const dialog = document.createElement("dialog");
+  dialog.id = "lume-source-dialog";
+  dialog.setAttribute("aria-labelledby", "lume-source-title");
+  dialog.innerHTML = `
+    <form method="dialog" class="source-dialog-heading">
+      <h2 id="lume-source-title">Quellen & Hinweise</h2>
+      <button type="submit" aria-label="Hinweise schließen">×</button>
+    </form>
+    <p>Die Informationen sind keine verbindliche Verkehrs-,
+       Sicherheits- oder Befahrbarkeitsauskunft.</p>
+
+    <h3>Ortssuche</h3>
+    <div id="search-source-notes"></div>
+
+    <h3>Baustellen & Verkehr</h3>
+    <div id="road-source-notes"></div>
+
+    <h3>Wetter & Elbe</h3>
+    <p>Wetter: Open-Meteo, Modellschätzung für Dresden.
+       Amtliche Wetterwarnungen sind noch nicht angebunden.</p>
+    <p>Pegel: PEGELONLINE / WSV. Der Wasserstand bestätigt
+       keine Befahrbarkeit von Uferwegen.</p>
+    <p>Datenstände und Messzeiten stehen an den jeweiligen Werten.
+       Ein Abrufzeitpunkt ist keine Messzeit.</p>
+
+    <div id="water-source-notes"></div>
+    <div id="briefing-source-notes"></div>
+  `;
+  document.body.append(dialog);
+
+  const sourceSlot = id => dialog.querySelector("#" + id);
+  const openNotes = () => {
+    if (!dialog.open) dialog.showModal();
+  };
+
+  const sourceButton = document.createElement("button");
+  sourceButton.type = "button";
+  sourceButton.id = "lume-source-open";
+  sourceButton.textContent = "Quellen & Hinweise *";
+  sourceButton.addEventListener("click", openNotes);
+
+  const footerSource = footer.querySelector('a[href*="pegelonline"]');
+  if (footerSource) {
+    sourceSlot("water-source-notes").append(footerSource);
+  }
+  footer.prepend(sourceButton);
+
+  const roadNote = filters.querySelector(".roadworks-note");
+  if (roadNote) sourceSlot("road-source-notes").append(roadNote);
+
+  const roadLink = filters.querySelector('a[href*="baustellen"]');
+  if (roadLink) sourceSlot("road-source-notes").append(roadLink);
+
+  const attribution = [...nearby.querySelectorAll("p")].find(
+    item => item.textContent.includes("Ortssuche: Nominatim")
+  );
+
+  if (attribution) {
+    sourceSlot("search-source-notes").append(attribution);
+
+    const shortNotice = document.createElement("button");
+    shortNotice.type = "button";
+    shortNotice.className = "search-source-short";
+    shortNotice.textContent = "Ortssuche über OpenStreetMap · Hinweise *";
+    shortNotice.addEventListener("click", openNotes);
+
+    nearby.querySelector("#place-search-form").after(shortNotice);
+  }
+
+  // Hide repeated instructions while preserving progress and errors.
+  const redundant = new Set([
+    "Wähle einen Punkt auf der Karte.",
+    "Wähle zuerst einen Ort für dein Briefing.",
+    "Zusammenfassung für den gewählten Ort und Umkreis.",
+    "Suche eine Straße oder einen Ort, oder wähle einen Punkt auf der Karte.",
+    "Suche eine Straße oder einen Ort, um Einträge in der Nähe zu finden."
+  ]);
+
+  for (const id of ["nearby-message", "briefing-message"]) {
+    const node = document.getElementById(id);
+    if (!node) continue;
+
+    const update = () => {
+      node.hidden = !node.textContent.trim() ||
+        redundant.has(node.textContent.trim());
+    };
+
+    new MutationObserver(update).observe(node, {
+      childList: true,
+      characterData: true,
+      subtree: true
+    });
+    update();
+  }
+
+  // Briefing citations use the same footer panel.
+  const output = document.getElementById("briefing-output");
+
+  if (output) {
+    const moveBriefingNotes = () => {
+      const details = output.querySelector("details");
+      const limitation = output.querySelector(".briefing-limitation");
+      const target = sourceSlot("briefing-source-notes");
+
+      if (details) {
+        target.replaceChildren(
+          ...(limitation ? [limitation] : []),
+          details
+        );
+      } else if (!output.children.length) {
+        target.replaceChildren();
+      }
+    };
+
+    new MutationObserver(moveBriefingNotes).observe(output, {
+      childList: true
+    });
+    moveBriefingNotes();
+  }
+})();
+</script>
+
+
+<style id="lume-final-layout-order-style">
+  .lume-weather-drawer .weather-widget {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .lume-weather-heading {
+    margin-bottom: 14px;
+    font-size: .95rem;
+    color: var(--text-primary);
+  }
+
+  .lume-weather-drawer .brand-row {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--card-border);
+  }
+
+  @media (max-width: 380px) {
+    #sidebar-toggle {
+      padding: 10px 8px;
+      gap: 5px;
+      font-size: .66rem;
+    }
+  }
+</style>
+
+<script id="lume-final-layout-order">
+(() => {
+  const toggle = document.getElementById("sidebar-toggle");
+  const label = toggle?.querySelector("span:last-child");
+  if (label) label.textContent = "Suche & Umgebung";
+
+  const sidebar = document.getElementById("lume-sidebar");
+  const title = sidebar?.querySelector(".sidebar-heading strong");
+  if (title) title.textContent = "Suche & Umgebung";
+
+  const cockpit = document.querySelector(
+    "#weather-drawer .cockpit-top-left"
+  );
+  const weather = cockpit?.querySelector(".weather-widget");
+
+  if (cockpit && weather) {
+    const heading = document.createElement("h3");
+    heading.className = "lume-weather-heading";
+    heading.textContent = "Wetter Dresden";
+    weather.prepend(heading);
+    cockpit.prepend(weather);
+  }
 })();
 </script>
 
