@@ -470,6 +470,32 @@
   #lume-location-status:empty { display:none; }
 </style>
 
+
+<style id="lume-compact-location-style">
+  .lume-location-privacy {
+    margin-top:6px;
+    font-size:.75rem;
+    color:var(--text-muted);
+  }
+  .lume-location-privacy summary {
+    display:list-item;
+    min-height:32px;
+    padding:5px 0;
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .lume-location-privacy summary:focus-visible {
+    outline:3px solid #327b9a;
+    outline-offset:3px;
+  }
+  .lume-location-privacy .nearby-note {
+    margin-top:6px;
+    font-size:inherit;
+    line-height:1.6;
+  }
+</style>
+
 </head>
 <body>
 
@@ -808,11 +834,17 @@ setInterval(renderStatus, 10000);
   note.setAttribute("aria-live", "polite");
   note.textContent = "Baustellen werden geladen.";
 
-  const modes = [
-    ["active", "Heute"],
-    ["upcoming", "Demnächst"],
-    ["all", "Alle"]
-  ];
+  const modes = [];
+
+  const todayLabel = document.createElement("span");
+  todayLabel.textContent = "Heute";
+  todayLabel.title =
+    "Einschränkungen im veröffentlichten Zeitraum für heute; "
+    + "keine Bestätigung der tatsächlichen Verkehrslage.";
+  todayLabel.style.cssText =
+    "display:inline-flex;align-items:center;padding:7px 12px;"
+    + "font-size:.78rem;font-weight:600;color:var(--text-muted);";
+  dock.appendChild(todayLabel);
 
   const buttons = [];
 
@@ -2602,12 +2634,15 @@ setInterval(renderStatus, 10000);
     <button type="button" id="lume-locate">
       Meinen Standort verwenden
     </button>
-    <p class="nearby-note">
-      Einmalige Ortung nach deiner Freigabe. Die Koordinaten werden
-      für die Umkreisabfrage an die Lume-API übermittelt.
-      Keine laufende Standortverfolgung.
-      Auf diesem Gerät wird der Ort erst mit „Ort speichern“ gespeichert.
-    </p>
+    <details class="lume-location-privacy">
+      <summary>Standorthinweise *</summary>
+      <p class="nearby-note">
+        Einmalige Ortung nach deiner Freigabe. Die Koordinaten werden
+        für die Umkreisabfrage an die Lume-API übermittelt.
+        Keine laufende Standortverfolgung.
+        Auf diesem Gerät wird der Ort erst mit „Ort speichern“ gespeichert.
+      </p>
+    </details>
     <p id="lume-location-status" class="nearby-note"
        role="status" aria-live="polite"></p>
   `;
