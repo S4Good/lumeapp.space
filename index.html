@@ -390,6 +390,27 @@
   }
 </style>
 
+
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#163024">
+<link rel="apple-touch-icon" href="/lume-icons/apple-touch-icon.png">
+<style id="lume-pwa-style">
+  #lume-favourites button { min-height:44px; }
+  #lume-favourites button:focus-visible,
+  #lume-install:focus-visible {
+    outline:3px solid #327b9a;
+    outline-offset:3px;
+  }
+  #lume-install {
+    border:0;
+    background:transparent;
+    color:var(--olive-accent);
+    font:inherit;
+    cursor:pointer;
+    padding:4px;
+  }
+</style>
+
 </head>
 <body>
 
@@ -2332,6 +2353,182 @@ setInterval(renderStatus, 10000);
     }
   });
 
+
+  // Saved only after the user's explicit action, on this device.
+  const favouritesKey = "lume.saved-places.v1";
+  const favouritesBox = document.createElement("details");
+  favouritesBox.id = "lume-favourites";
+  favouritesBox.style.cssText =
+    "margin:12px 0;padding:10px;border:1px solid var(--card-border);" +
+    "border-radius:10px;line-height:1.6;";
+  favouritesBox.innerHTML = `
+    <summary style="cursor:pointer;font-weight:700">Meine Orte</summary>
+    <p class="nearby-note">
+      Optional: bis zu 10 Orte auf diesem Gerät speichern.
+      Beim Öffnen werden Ort und Umkreis an die Lume-API übermittelt.
+    </p>
+    <button type="button" class="dock-btn" id="lume-save-place">
+      Gewählten Ort speichern
+    </button>
+    <p class="nearby-note" id="lume-saved-status" role="status"></p>
+    <ul class="nearby-results" id="lume-saved-list"></ul>
+    <button type="button" class="dock-btn" id="lume-clear-places">
+      Alle gespeicherten Orte löschen
+    </button>
+  `;
+  panel.querySelector(".nearby-controls").before(favouritesBox);
+
+  const savedStatus = favouritesBox.querySelector("#lume-saved-status");
+  const savedList = favouritesBox.querySelector("#lume-saved-list");
+  const clearSaved = favouritesBox.querySelector("#lume-clear-places");
+  let savedPlaces = [];
+  let savedStorageAvailable = true;
+
+  function validSavedPlace(place) {
+    return place && typeof place.name === "string" &&
+      place.name.length > 0 && place.name.length <= 120 &&
+      Number.isFinite(place.lat) && Number.isFinite(place.lon) &&
+      place.lat >= 50.97 && place.lat <= 51.20 &&
+      place.lon >= 13.57 && place.lon <= 14.03 &&
+      [500, 800, 1500, 3000].includes(place.radius_m);
+  }
+
+  try {
+    const raw = localStorage.getItem(favouritesKey);
+    if (raw !== null) {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length > 10 ||
+          !parsed.every(validSavedPlace)) {
+        savedStatus.textContent =
+          "Gespeicherte Orte sind ungültig. Du kannst sie löschen.";
+      } else {
+        savedPlaces = parsed;
+      }
+    }
+  } catch {
+    savedStorageAvailable = false;
+    savedStatus.textContent =
+      "Gespeicherte Orte konnten nicht gelesen werden.";
+  }
+
+  function persistSavedPlaces(next) {
+    try {
+      localStorage.setItem(favouritesKey, JSON.stringify(next));
+      savedPlaces = next;
+      savedStorageAvailable = true;
+      renderSavedPlaces();
+      return true;
+    } catch {
+      savedStatus.textContent =
+        "Speichern auf diesem Gerät nicht möglich. " +
+        "Bitte die Browser-Einstellungen prüfen.";
+      return false;
+    }
+  }
+
+  function renderSavedPlaces() {
+    savedList.replaceChildren();
+    clearSaved.hidden = savedPlaces.length === 0 && savedStorageAvailable;
+
+    for (const [index, place] of savedPlaces.entries()) {
+      const item = document.createElement("li");
+      const open = document.createElement("button");
+      open.type = "button";
+      open.textContent = place.name + " · " + place.radius_m + " m";
+      open.addEventListener("click", () => {
+        searchVersion++;
+        if (searchController) searchController.abort();
+        searchButton.disabled = false;
+        searchResults.replaceChildren();
+        searchStatus.textContent = "";
+        searchInput.value = place.name;
+        radius.value = String(place.radius_m);
+        selectLocation(place.lat, place.lon, place.name);
+        if (map) map.flyTo({
+          center: [place.lon, place.lat],
+          zoom: 14,
+          essential: false
+        });
+        savedStatus.textContent = "Gespeicherter Ort geöffnet.";
+      });
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Ort löschen";
+      remove.setAttribute("aria-label", place.name + " löschen");
+      remove.addEventListener("click", () => {
+        if (persistSavedPlaces(savedPlaces.filter((_, i) => i !== index))) {
+          savedStatus.textContent = "Ort gelöscht.";
+        }
+      });
+      item.append(open, remove);
+      savedList.append(item);
+    }
+  }
+
+  favouritesBox.querySelector("#lume-save-place").addEventListener(
+    "click", () => {
+      if (!selected) {
+        savedStatus.textContent = "Bitte zuerst einen Ort auswählen.";
+        return;
+      }
+      const initialName = (
+        locationLabel.textContent.replace(/^Gewählter Ort:\s*/, "") ||
+        searchInput.value || "Mein Ort"
+      ).slice(0, 120);
+      const answer = window.prompt("Name für diesen Ort:", initialName);
+      if (answer === null) return;
+      const name = answer.trim().slice(0, 120);
+      if (!name) return;
+
+      const place = {
+        name,
+        lat: selected.lat,
+        lon: selected.lon,
+        radius_m: Number(radius.value)
+      };
+      if (!validSavedPlace(place)) {
+        savedStatus.textContent =
+          "Dieser Ort oder Umkreis liegt außerhalb des unterstützten Bereichs.";
+        return;
+      }
+
+      const index = savedPlaces.findIndex(
+        item => item.lat === place.lat && item.lon === place.lon &&
+          item.radius_m === place.radius_m
+      );
+      if (index < 0 && savedPlaces.length >= 10) {
+        savedStatus.textContent =
+          "Maximal 10 Orte. Bitte zuerst einen Ort löschen.";
+        return;
+      }
+      const next = [...savedPlaces];
+      if (index >= 0) next[index] = place;
+      else next.push(place);
+      if (persistSavedPlaces(next)) {
+        savedStatus.textContent = "Ort auf diesem Gerät gespeichert.";
+      }
+    }
+  );
+
+  clearSaved.addEventListener("click", () => {
+    if (!window.confirm("Alle auf diesem Gerät gespeicherten Orte löschen?")) {
+      return;
+    }
+    try {
+      localStorage.removeItem(favouritesKey);
+      savedPlaces = [];
+      savedStorageAvailable = true;
+      renderSavedPlaces();
+      savedStatus.textContent = "Alle gespeicherten Orte gelöscht.";
+    } catch {
+      savedStatus.textContent = "Löschen im Browser nicht möglich.";
+    }
+  });
+
+  renderSavedPlaces();
+
+
   radius.addEventListener("change", () => {
     resetBriefing();
     if (selected) loadNearby();
@@ -4244,5 +4441,6 @@ setInterval(renderStatus, 10000);
 })();
 </script>
 
+<script src="/lume-pwa.js" defer></script>
 </body>
 </html>
