@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#163024">
+  <meta name="description" content="Die Idee hinter Lume Dresden, der Entwickler und die nächsten Schritte des unabhängigen Civic-Data-Projekts.">
+  <title>Über Lume & mich · Lume Dresden</title>
+  <link rel="canonical" href="https://lumeapp.space/ueber-lume.html">
+  <link rel="icon" type="image/png" href="/lume-icons/icon-192.png">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg:#f6f3ec;
+      --ink:#163024;
+      --muted:#52675b;
+      --border:rgba(22,48,36,.15);
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      background:
+        radial-gradient(ellipse at 85% 0%, #dceee4 0, transparent 48%),
+        var(--bg);
+      color:var(--ink);
+      font:16px/1.75 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    a { color:#245b42; text-underline-offset:4px; }
+    a:focus-visible {
+      outline:3px solid #327b9a;
+      outline-offset:5px;
+      border-radius:3px;
+    }
+    header, main, footer {
+      width:min(920px, calc(100% - 40px));
+      margin-inline:auto;
+    }
+    header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:16px;
+      padding-block:24px;
+      border-bottom:1px solid var(--border);
+    }
+    .brand {
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      color:var(--ink);
+      text-decoration:none;
+      font-size:1.1rem;
+      font-weight:750;
+    }
+    .dot {
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      background:#2e8b57;
+      box-shadow:0 0 16px #2e8b5760;
+    }
+    .hero { padding:64px 0 32px; }
+    .eyebrow {
+      font-size:.76rem;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-weight:750;
+      color:#38634b;
+    }
+    h1 {
+      max-width:720px;
+      font-size:clamp(2.3rem,7vw,4.4rem);
+      line-height:1.08;
+      letter-spacing:-.055em;
+      margin:16px 0 24px;
+    }
+    .lead {
+      max-width:680px;
+      font-size:1.15rem;
+      color:var(--muted);
+    }
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:18px;
+      margin:26px 0;
+    }
+    .card {
+      padding:28px;
+      background:rgba(255,255,255,.6);
+      border:1px solid var(--border);
+      border-radius:20px;
+    }
+    .wide { grid-column:1 / -1; }
+    h2 { font-size:1.3rem; line-height:1.35; margin:0 0 14px; }
+    p { margin:0 0 14px; }
+    p:last-child { margin-bottom:0; }
+    ul { padding-left:22px; margin-bottom:0; }
+    li + li { margin-top:8px; }
+    .button {
+      display:inline-block;
+      padding:11px 18px;
+      border-radius:10px;
+      background:var(--ink);
+      color:white;
+      text-decoration:none;
+      font-weight:650;
+      margin-top:8px;
+    }
+    .note { color:var(--muted); font-size:.9rem; }
+    footer {
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px 24px;
+      padding:28px 0 36px;
+      border-top:1px solid var(--border);
+      margin-top:36px;
+      font-size:.9rem;
+    }
+    @media(max-width:640px) {
+      .grid { grid-template-columns:1fr; }
+      .hero { padding-top:40px; }
+      .card { padding:22px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">
+      <span class="dot" aria-hidden="true"></span>
+      Lume Dresden
+    </a>
+    <a href="/">← Zurück zur Karte</a>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="page-title">
+      <span class="eyebrow">Die Idee · Der Mensch · Die nächsten Schritte</span>
+      <h1 id="page-title">Dresden verstehen.<br>Mit offenen Daten.</h1>
+      <p class="lead">
+        Lume bringt Informationen über unsere Stadt an einem Ort zusammen:
+        gemeldete Verkehrseinschränkungen, Wetter, amtliche Wetterwarnungen
+        und den Elbe-Pegel. Mit Quellen und Zeitangaben, damit du die
+        Informationen einordnen kannst.
+      </p>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Warum ich Lume entwickle</h2>
+        <p>
+          Was ist in meiner Umgebung gemeldet? Welche Straße ist betroffen?
+          Wie aktuell sind die Daten?
+        </p>
+        <p>
+          Mit Lume möchte ich solche Fragen leichter zugänglich machen.
+          Das Projekt verbindet meinen Lernweg mit einer Anwendung
+          für Dresden, die Schritt für Schritt wächst.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Ich bin Shahrukh.</h2>
+        <p>
+          Ich mache in Dresden eine Umschulung zum Fachinformatiker
+          für Daten- und Prozessanalyse. Mich interessieren Daten,
+          sichere Systeme, Automatisierung und künstliche Intelligenz.
+        </p>
+        <p>
+          Lume entwickle und betreibe ich als eigenständiges Projekt.
+          Dabei lerne ich an echten Aufgaben – von der Datenpipeline
+          bis zur verständlichen Darstellung im Browser.
+        </p>
+        <a class="button" href="https://s4good.github.io/">
+          Mein Portfolio ansehen ↗
+        </a>
+      </section>
+
+      <section class="card wide">
+        <h2>Wie Lume arbeitet</h2>
+        <p>
+          Python-Skripte aktualisieren öffentliche Daten auf meinem
+          HomeLab. PostgreSQL mit PostGIS speichert die Geodaten.
+          Eine FastAPI-Schnittstelle stellt sie für die Webseite bereit;
+          MapLibre macht die Straßenabschnitte auf der Karte sichtbar.
+        </p>
+        <p>
+          Das Lume-Briefing entsteht derzeit aus strukturierten Daten
+          und festen Regeln, ohne generative KI. Fehlende und veraltete
+          Informationen werden entsprechend gekennzeichnet.
+        </p>
+        <p class="note">
+          Lume ist ein unabhängiges Projekt und kein Angebot der Stadt
+          Dresden. Die Angaben sind keine verbindliche Verkehrs-,
+          Sicherheits- oder Befahrbarkeitsauskunft.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Was als Nächstes kommt</h2>
+        <ul>
+          <li>Bedienung und Darstellung auf Mobilgeräten verbessern.</li>
+          <li>Veränderungen in den veröffentlichten Daten nachvollziehbar machen.</li>
+          <li>Eine optionale KI-Formulierung auf Basis geprüfter Fakten erproben.</li>
+          <li>Später eine iOS-App entwickeln, die dieselbe API verwendet.</li>
+        </ul>
+        <p class="note" style="margin-top:16px">
+          Das sind Entwicklungsziele, keine zugesagten Funktionen
+          oder Veröffentlichungstermine.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Die Zukunft von Lume unterstützen</h2>
+        <p>
+          Perspektivisch möchte ich eine freiwillige Unterstützung
+          für Betrieb und Weiterentwicklung ermöglichen.
+        </p>
+        <p>
+          Auf dieser Seite gibt es derzeit keinen Zahlungslink.
+          Vor einer Einführung kläre ich die steuerliche Einordnung
+          und die notwendigen Angaben zur Zahlungsabwicklung.
+        </p>
+        <p>
+          Schon jetzt helfen konkrete Rückmeldungen:
+          Was ist verständlich? Welche Information fehlt?
+          Wo funktioniert etwas noch nicht?
+        </p>
+        <a href="https://github.com/S4Good/lumeapp.space/issues"
+           target="_blank" rel="noopener noreferrer">
+          Feedback auf GitHub geben ↗
+        </a>
+        <p class="note" style="margin-top:12px">
+          GitHub-Issues sind öffentlich. Bitte keine privaten Adressen
+          oder anderen vertraulichen Angaben veröffentlichen.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <a href="/">Lume öffnen</a>
+    <a href="impressum.html">Impressum</a>
+    <a href="https://s4good.github.io/">Portfolio</a>
+    <a href="https://github.com/S4Good/lumeapp.space"
+       target="_blank" rel="noopener noreferrer">Frontend auf GitHub ↗</a>
+  </footer>
+</body>
+</html>
