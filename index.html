@@ -444,6 +444,32 @@
   }
 }
 </script>
+
+<style id="lume-geolocation-style">
+  .lume-geolocation {
+    margin:12px 0;
+    padding:12px 0;
+    border-top:1px solid var(--card-border);
+  }
+  #lume-locate {
+    min-height:44px;
+    width:100%;
+    padding:10px 12px;
+    border:1px solid #b7c8bf;
+    border-radius:8px;
+    background:var(--olive-pill);
+    color:var(--text-primary);
+    font:inherit;
+    font-weight:700;
+    cursor:pointer;
+  }
+  #lume-locate:focus-visible {
+    outline:3px solid #327b9a;
+    outline-offset:3px;
+  }
+  #lume-location-status:empty { display:none; }
+</style>
+
 </head>
 <body>
 
@@ -1862,6 +1888,9 @@ setInterval(renderStatus, 10000);
   });
 
   function selectLocation(lat, lon, label) {
+    cancelLocationRequest();
+    geoStatus.textContent = "";
+
     if (window.lumeSetSidebarOpen) {
       window.lumeSetSidebarOpen(true);
     }
@@ -2562,6 +2591,163 @@ setInterval(renderStatus, 10000);
   });
 
   renderSavedPlaces();
+
+
+
+  // One-shot location lookup, explicitly initiated by the user.
+  const geoSection = document.createElement("section");
+  geoSection.className = "lume-geolocation";
+  geoSection.setAttribute("aria-label", "Eigenen Standort verwenden");
+  geoSection.innerHTML = `
+    <button type="button" id="lume-locate">
+      Meinen Standort verwenden
+    </button>
+    <p class="nearby-note">
+      Einmalige Ortung nach deiner Freigabe. Die Koordinaten werden
+      für die Umkreisabfrage an die Lume-API übermittelt.
+      Keine laufende Standortverfolgung.
+      Auf diesem Gerät wird der Ort erst mit „Ort speichern“ gespeichert.
+    </p>
+    <p id="lume-location-status" class="nearby-note"
+       role="status" aria-live="polite"></p>
+  `;
+  searchForm.after(geoSection);
+
+  const geoButton = geoSection.querySelector("#lume-locate");
+  const geoStatus = geoSection.querySelector("#lume-location-status");
+  let geoVersion = 0;
+  let geoPending = false;
+
+  function cancelLocationRequest() {
+    geoVersion++;
+    if (geoPending) geoStatus.textContent = "";
+    geoPending = false;
+    geoButton.textContent = "Meinen Standort verwenden";
+  }
+
+  // Browser geolocation cannot be cancelled directly. Invalidating the
+  // request prevents a late callback from changing the selected place.
+  resetButton.addEventListener("click", () => {
+    cancelLocationRequest();
+    geoStatus.textContent = "";
+  });
+  pick.addEventListener("click", () => {
+    cancelLocationRequest();
+    geoStatus.textContent = "";
+  });
+  searchInput.addEventListener("input", cancelLocationRequest);
+  searchForm.addEventListener("submit", cancelLocationRequest);
+
+  geoButton.addEventListener("click", () => {
+    if (geoPending) {
+      cancelLocationRequest();
+      geoStatus.textContent = "Standortsuche abgebrochen.";
+      return;
+    }
+
+    if (!window.isSecureContext || !navigator.geolocation) {
+      geoStatus.textContent =
+        "Die Standortfunktion ist hier nicht verfügbar. " +
+        "Öffne Lume über HTTPS oder verwende die Ortssuche.";
+      return;
+    }
+
+    // Prevent pending place-search results from replacing this selection.
+    searchVersion++;
+    if (searchController) searchController.abort();
+    searchButton.disabled = false;
+    searchResults.replaceChildren();
+    searchStatus.textContent = "";
+    setChoosing(false);
+
+    const currentGeo = ++geoVersion;
+    geoPending = true;
+    geoButton.textContent = "Standortsuche abbrechen";
+    geoStatus.textContent =
+      "Standort wird ermittelt. Bitte die Browser-Freigabe beantworten …";
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        if (currentGeo !== geoVersion) return;
+
+        geoPending = false;
+        geoButton.textContent = "Meinen Standort verwenden";
+
+        const { latitude, longitude, accuracy } = position.coords;
+        if (
+          !Number.isFinite(latitude) ||
+          !Number.isFinite(longitude) ||
+          !Number.isFinite(accuracy) || accuracy < 0
+        ) {
+          geoStatus.textContent =
+            "Der Standort konnte nicht zuverlässig gelesen werden. " +
+            "Bitte verwende die Ortssuche.";
+          return;
+        }
+
+        if (
+          latitude < 50.97 || latitude > 51.20 ||
+          longitude < 13.57 || longitude > 14.03
+        ) {
+          geoStatus.textContent =
+            "Dein ermittelter Standort liegt außerhalb des " +
+            "unterstützten Bereichs Dresden und Umgebung. " +
+            "Bitte suche einen Ort in Dresden.";
+          return;
+        }
+
+        if (accuracy > 5000) {
+          geoStatus.textContent =
+            "Die Ortung ist zu ungenau (geschätzt " +
+            new Intl.NumberFormat("de-DE").format(Math.ceil(accuracy)) +
+            " m). Bitte wähle deinen Ort über die Suche oder Karte.";
+          return;
+        }
+
+        searchInput.value = "";
+        selectLocation(latitude, longitude, "Mein Standort");
+
+        geoStatus.textContent =
+          "Standort übernommen. Geschätzte Genauigkeit: " +
+          new Intl.NumberFormat("de-DE").format(Math.ceil(accuracy)) +
+          " m. Der Umkreis bleibt bei " +
+          new Intl.NumberFormat("de-DE").format(Number(radius.value)) +
+          " m." +
+          (accuracy > Number(radius.value)
+            ? " Die Ortungsungenauigkeit ist größer als der Umkreis. " +
+              "Prüfe den Punkt auf der Karte."
+            : " Du kannst den Punkt auf der Karte prüfen.");
+
+        if (map) {
+          map.flyTo({
+            center: [longitude, latitude],
+            zoom: accuracy > 1000 ? 12 : 14,
+            essential: false
+          });
+        }
+      },
+      error => {
+        if (currentGeo !== geoVersion) return;
+        geoPending = false;
+        geoButton.textContent = "Meinen Standort verwenden";
+        const messages = {
+          1: "Standortzugriff nicht erlaubt. Du kannst die Freigabe " +
+             "in den Website-Einstellungen ändern oder die Ortssuche verwenden.",
+          2: "Der Standort ist derzeit nicht verfügbar. " +
+             "Bitte verwende die Ortssuche oder wähle einen Kartenpunkt.",
+          3: "Die Standortsuche hat zu lange gedauert. " +
+             "Versuche es erneut oder verwende die Ortssuche."
+        };
+        geoStatus.textContent = messages[error.code] ||
+          "Standortsuche fehlgeschlagen. Bitte verwende die Ortssuche.";
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 12000,
+        maximumAge: 0
+      }
+    );
+  });
 
 
   radius.addEventListener("change", () => {
