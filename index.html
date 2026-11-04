@@ -3995,6 +3995,19 @@ setInterval(renderStatus, 10000);
     border-radius: 8px;
   }
   .lume-dwd-content summary { cursor: pointer; font-weight: 700; }
+  .lume-dwd-content .dwd-metadata {
+    padding: 0;
+    border: 0;
+  }
+  .lume-dwd-content .dwd-metadata summary {
+    min-height: 32px;
+    padding: 5px 0;
+    font-size: .75rem;
+  }
+  .lume-dwd-content summary:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 3px;
+  }
   .lume-dwd-content .dwd-text { white-space: pre-line; }
   .lume-dwd-content .dwd-meta { color: var(--text-muted); }
   .lume-dwd-content .dwd-attention { color: #8b3d24; font-weight: 700; }
@@ -4092,13 +4105,16 @@ setInterval(renderStatus, 10000);
       ? "DWD-Daten veraltet. Aktuelle Warnlage unbekannt."
       : entries.length
         ? `${active} aktuelle · ${entries.length - active} bevorstehende Warnmeldungen.`
-        : "Keine aktuellen oder bevorstehenden DWD-Warnmeldungen im geladenen Snapshot.",
+        : "Keine DWD-Warnmeldungen für Dresden im aktuellen Snapshot.",
       stale ? "dwd-attention" : "");
 
-    add(content, "p",
+    const metadata = document.createElement("details");
+    metadata.className = "dwd-metadata";
+    add(metadata, "summary", "Details & Quelle");
+    add(metadata, "p",
       "Stadt Dresden · nicht auf den gewählten Umkreis begrenzt.",
       "dwd-meta");
-    add(content, "p",
+    add(metadata, "p",
       "Snapshot: " + formatTime(data.snapshot_at) +
       " · Abruf: " + formatTime(data.fetched_at),
       "dwd-meta");
@@ -4122,9 +4138,14 @@ setInterval(renderStatus, 10000);
       content.append(details);
     }
 
-    add(content, "p",
+    add(metadata, "p",
       "Keine Warnmeldung bestätigt keine gefahrlose Situation.",
       "dwd-meta");
+    const source = add(metadata, "a", "Deutscher Wetterdienst (DWD)");
+    source.href = "https://www.dwd.de/warnungen";
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    content.append(metadata);
   };
 
   const widget = document.querySelector(
@@ -4140,16 +4161,19 @@ setInterval(renderStatus, 10000);
   output.setAttribute("role", "status");
   panel.append(output);
 
-  const attribution = add(panel, "a", "Quelle: Deutscher Wetterdienst");
-  attribution.href = "https://www.dwd.de/warnungen";
-  attribution.target = "_blank";
-  attribution.rel = "noopener noreferrer";
   widget.after(panel);
 
   let latest = null;
   let failed = false;
 
   function render() {
+    const metadataOpen = Boolean(
+      output.querySelector(".dwd-metadata")?.open
+    );
+    const expandedWarnings = new Set(
+      [...output.querySelectorAll("details:not(.dwd-metadata)[open]")]
+        .map(item => item.querySelector("summary")?.textContent)
+    );
     output.replaceChildren();
     if (!latest) {
       add(output, "p", failed
@@ -4163,6 +4187,16 @@ setInterval(renderStatus, 10000);
         output
       );
       if (failed) add(output, "p", "Letzter Abruf fehlgeschlagen.");
+    }
+
+    const metadata = output.querySelector(".dwd-metadata");
+    if (metadata) metadata.open = metadataOpen;
+    for (const details of output.querySelectorAll(
+      "details:not(.dwd-metadata)"
+    )) {
+      details.open = expandedWarnings.has(
+        details.querySelector("summary")?.textContent
+      );
     }
 
     const value = document.getElementById("dwd-val");
