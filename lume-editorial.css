@@ -1,8 +1,9 @@
+@import url("/lume-identity.css");
 :root{color-scheme:light;--bg:#f6f3ec;--ink:#163024;--muted:#52675b;
 --border:rgba(22,48,36,.16)}
 *{box-sizing:border-box}
 body{margin:0;background:radial-gradient(ellipse at 90% 0%,#dceee4,transparent 45%),
-var(--bg);color:var(--ink);font:17px/1.8 system-ui,-apple-system,sans-serif}
+var(--bg);color:var(--ink);font:17px/1.8 "Lume Plex",system-ui,-apple-system,sans-serif}
 header,main,footer{width:min(940px,calc(100% - 36px));margin:auto}
 header{display:flex;justify-content:space-between;align-items:center;
 flex-wrap:wrap;gap:14px;padding:22px 0;border-bottom:1px solid var(--border)}

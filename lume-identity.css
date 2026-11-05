@@ -1,0 +1,82 @@
+@font-face {
+  font-family: "Lume Plex";
+  src: url("/lume-fonts/ibm-plex-sans-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 700;
+  font-stretch: 75% 100%;
+  font-display: swap;
+}
+body, button, input, select, textarea { font-family: "Lume Plex", system-ui, sans-serif; }
+body .brand-pill, body .m-label {
+  text-transform: none;
+  letter-spacing: .01em;
+  font-size: .78rem;
+}
+body .m-val, body #sync-ticker { font-variant-numeric: tabular-nums; }
+body .m-sub, body .nearby-note, body .roadworks-note,
+body .briefing-source, body .weather-meta, body .dwd-meta { font-size: .8rem; line-height: 1.5; }
+body .filter-dock .dock-btn, body .nearby-panel button,
+body .lume-basemap-switch button { border-radius: 8px; }
+body .nearby-panel, body .cockpit-top-left { border-radius: 12px; }
+body .lume-floating-brand h1 { letter-spacing: -.025em; font-weight: 600; }
+body .utility-bar { flex-wrap: wrap; }
+body .utility-bar a, body #lume-source-open { font-size: .75rem; }
+body #weather-drawer-toggle { display: none; }
+.lume-topics {
+  position: fixed;
+  z-index: 24;
+  top: 94px;
+  right: 20px;
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid #16302426;
+  border-radius: 12px;
+  background: #f6f3ecfa;
+  box-shadow: 0 4px 16px #16302412;
+}
+.lume-topics button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #163024;
+  font: 500 .85rem/1.2 "Lume Plex", system-ui, sans-serif;
+  cursor: pointer;
+}
+.lume-topics button[aria-pressed="true"] { background: #163024; color: #f6f3ec; }
+.lume-topics button[aria-pressed="false"] { border-color: #16302433; }
+.lume-topics button:disabled { opacity: .5; cursor: default; }
+.lume-topics button:focus-visible { outline: 3px solid #327b9a; outline-offset: 3px; }
+.lume-topics svg { width: 20px; height: 20px; flex-shrink: 0; }
+body .lume-weather-drawer { top: 160px; }
+.lume-road-overview {
+  margin: 10px 0 14px;
+  padding: 9px 12px;
+  border-left: 3px solid #c25b3f;
+  background: #e4ece655;
+}
+.lume-road-overview .metric-box { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.lume-road-overview .m-sub { flex-basis: 100%; }
+body #weather-drawer [hidden] { display: none !important; }
+body #weather-drawer .metrics-strip { grid-template-columns: 1fr; }
+body #weather-drawer .lume-water-only .brand-row {
+  margin-top: 0; padding-top: 0; border-top: 0;
+}
+body.lume-map-unavailable .telemetry-stack { top: 160px; }
+body .lume-location-privacy .nearby-note { font-size: .8rem; }
+@media (max-width: 760px) {
+  .lume-topics { top: 132px; right: 12px; gap: 3px; padding: 4px; }
+  .lume-topics button { padding: 7px 9px; font-size: .8rem; }
+  body .lume-weather-drawer { top: 194px; }
+  body .telemetry-stack, body.lume-map-unavailable .telemetry-stack { top: 194px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body .lume-floating-brand, body .lume-floating-brand h1,
+  body .lume-floating-brand .brand-dot { animation: none !important; }
+}

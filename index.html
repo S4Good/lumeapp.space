@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lume Dresden · Baustellen, Wetterwarnungen &amp; Elbe-Pegel</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" href="/lume-fonts/ibm-plex-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- MapLibre GL JS -->
   <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
@@ -29,7 +27,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; background: #000; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Lume Plex', system-ui, sans-serif; background: #000; }
 
     #map {
       width: 100vw;
@@ -168,7 +166,7 @@
     }
 
     .insp-tag {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Lume Plex', system-ui, sans-serif;
       font-size: 0.7rem;
       font-weight: 700;
       padding: 3px 8px;
@@ -543,7 +541,7 @@
   <div class="glass-panel cockpit-top-left">
     <div class="brand-row">
       <span class="brand-pill" id="feed-status">Daten werden geladen</span>
-      <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="sync-ticker">ABRUF AUSSTEHEND</span>
+      <span style="font-family: 'Lume Plex', system-ui, sans-serif; font-size: 0.7rem; color: var(--text-muted);" id="sync-ticker">ABRUF AUSSTEHEND</span>
     </div>
     <h2 class="city-data-heading">Wetter &amp; Stadtdaten</h2>
 
@@ -818,7 +816,7 @@ setInterval(renderStatus, 10000);
 <script id="lume-roadworks">
 (() => {
   const endpoint =
-    "https://api.lumeapp.space/api/v1/telemetry/disruptions";
+    "https://api.lumeapp.space/api/v1/telemetry/city-disruptions";
 
   let snapshot = null;
   let mode = "active";
@@ -828,6 +826,7 @@ setInterval(renderStatus, 10000);
   const dock = document.querySelector(".filter-dock");
   const countElement = document.getElementById("corr-val");
   const countLabel = countElement.parentElement.querySelector(".m-sub");
+  countLabel.textContent = "Verkehrsmeldungen werden geladen …";
 
   const note = document.createElement("div");
   note.className = "roadworks-note";
@@ -837,6 +836,7 @@ setInterval(renderStatus, 10000);
   const modes = [];
 
   const todayLabel = document.createElement("span");
+  todayLabel.id = "lume-today-label";
   todayLabel.textContent = "Heute";
   todayLabel.title =
     "Einschränkungen im veröffentlichten Zeitraum für heute; "
@@ -869,8 +869,8 @@ setInterval(renderStatus, 10000);
 
   const sourceLink = document.createElement("a");
   sourceLink.href =
-    "https://www.baustellen.sachsen.de/baustellendaten-dienste-3997.html";
-  sourceLink.textContent = "Baustellendaten: LASuV Sachsen";
+    "https://kommisdd.dresden.de/net3/public/ogc.ashx?service=ikx&renderhint=targethtml&nodeid=81";
+  sourceLink.textContent = "Verkehrsdaten: Stadt Dresden · dl-de/by-2-0";
   sourceLink.target = "_blank";
   sourceLink.rel = "noopener";
   sourceLink.style.cssText =
@@ -902,8 +902,21 @@ setInterval(renderStatus, 10000);
     return value ? value.split("-").reverse().join(".") : "Nicht angegeben";
   }
 
+  window.lumeCitySnapshotStale = data => {
+    const today = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit"
+    }).format(new Date());
+    const fetched = Date.parse(data.snapshot_fetched_at);
+    return data.status !== "ok" || data.source_valid_on !== today ||
+      !Number.isFinite(fetched) || Date.now() - fetched > 7200000 ||
+      fetched - Date.now() > 300000;
+  };
+
   function visibleFeatures() {
     if (!snapshot) return [];
+    if (retrievalFailed || window.lumeCitySnapshotStale(snapshot)) {
+      return snapshot.features;
+    }
     return snapshot.features.filter(feature =>
       mode === "all" ||
       feature.properties.schedule_status === mode
@@ -958,12 +971,14 @@ setInterval(renderStatus, 10000);
         "Zeitraum: " + dateLabel(p.starts_on) +
           " bis " + dateLabel(p.ends_on),
         "Quelländerung: " + dateLabel(p.source_updated_on),
-        "Snapshot: " + formatTime(snapshot.snapshot_fetched_at),
-        "Quelle: LASuV Sachsen, Baustelleninformationssystem Sachsen.",
+        "Quellgültigkeit: " + dateLabel(snapshot.source_valid_on),
+        "Abruf: " + formatTime(snapshot.snapshot_fetched_at),
+        "Quelle: Landeshauptstadt Dresden, Straßen- und Tiefbauamt · dl-de/by-2-0.",
         "Status laut veröffentlichtem Zeitraum; " +
           "keine Bestätigung der tatsächlichen Verkehrslage."
       ].filter(line => line !== null && line !== undefined).join("\n"),
-      labels[p.schedule_status] || "GEMELDET"
+      labels[(retrievalFailed || window.lumeCitySnapshotStale(snapshot))
+        ? "unknown" : p.schedule_status] || "GEMELDET"
     );
   }
 
@@ -975,11 +990,11 @@ setInterval(renderStatus, 10000);
       features.map(feature => feature.properties.source_id)
     ).size;
 
-    countElement.textContent = count;
-    countLabel.textContent =
-      mode === "active" ? "IDs im heutigen Zeitraum" :
-      mode === "upcoming" ? "IDs mit künftigem Beginn" :
-      "IDs im geladenen Snapshot";
+    const stale = retrievalFailed || window.lumeCitySnapshotStale(snapshot);
+    countElement.textContent = stale ? "—" : count;
+    countLabel.textContent = stale
+      ? "Letzter Stand: " + count + " Meldungen · aktuelle Lage unbekannt"
+      : "Meldungen · städtische Veröffentlichung für heute";
 
     for (const [value, button] of buttons) {
       button.classList.toggle("active", value === mode);
@@ -993,22 +1008,25 @@ setInterval(renderStatus, 10000);
           ...feature,
           properties: {
             ...feature.properties,
-            lume_feature_key: String(feature.id)
+            lume_feature_key: String(feature.id),
+            schedule_status: stale ? "unknown" : feature.properties.schedule_status
           }
         }))
       });
     }
 
-    const snapshotTime = Date.parse(snapshot.snapshot_fetched_at);
-    const stale = !Number.isFinite(snapshotTime) ||
-      Date.now() - snapshotTime > 6 * 60 * 60 * 1000;
-
     note.textContent =
       (retrievalFailed ? "Abruf fehlgeschlagen · letzter Snapshot. " : "") +
-      (stale ? "Snapshot älter als 6 Stunden. " : "") +
-      count + " Quell-IDs · " + features.length + " Straßenabschnitte. " +
-      "Snapshot: " + formatTime(snapshot.snapshot_fetched_at) +
-      ". Unvollständige Abdeckung; Status laut Zeitraum.";
+      (stale ? "Letzter Datenstand; aktuelle Gültigkeit unklar. " : "") +
+      count + " Meldungen, keine Zählung einzelner Baustellen. " +
+      "Quellgültigkeit: " + dateLabel(snapshot.source_valid_on) +
+      ". Abruf: " + formatTime(snapshot.snapshot_fetched_at) +
+      ". Stadt Dresden · Straßen- und Tiefbauamt · dl-de/by-2-0. " +
+      "Aufbereitung: Lume Dresden. Erfasst werden veröffentlichte " +
+      "Kfz-Verkehrseinschränkungen; keine lückenlose Live-Verkehrslage. " +
+      "Unvorhersehbare Havarien, Versammlungen, kurzfristige Polizeiregelungen, " +
+      "Fuß-, Rad- und ruhender Verkehr sind nicht abgedeckt. " +
+      "Geometrien zeigen Straßenabschnitte, nicht die exakte Ausdehnung.";
   }
 
   function installLayer() {
@@ -1120,6 +1138,13 @@ setInterval(renderStatus, 10000);
         throw new Error("Invalid roadworks response");
       }
 
+      if (data.source_id !== "dresden_city" ||
+          !["ok", "stale"].includes(data.status)) {
+        throw new Error("Unerwartete städtische Datenquelle");
+      }
+      for (const feature of data.features) {
+        feature.properties.restriction_type ??= feature.properties.type;
+      }
       snapshot = data;
       retrievalFailed = false;
       updateLayer();
@@ -2128,8 +2153,11 @@ setInterval(renderStatus, 10000);
 
   let briefingController = null;
   let briefingVersion = 0;
+  let briefingAgeTimer = null;
+  let nearbyAgeTimer = null;
 
   function resetBriefing() {
+    clearInterval(briefingAgeTimer);
     briefingVersion++;
     if (briefingController) briefingController.abort();
     briefingOutput.replaceChildren();
@@ -2151,6 +2179,7 @@ setInterval(renderStatus, 10000);
   }
 
   function renderBriefing(data) {
+    clearInterval(briefingAgeTimer);
     const labels = {
       ok: "aktuell",
       stale: "veraltet",
@@ -2182,7 +2211,9 @@ setInterval(renderStatus, 10000);
         "Quelle: " + source.name +
           (source.fetched_at
             ? " · Abruf: " + formatTime(source.fetched_at)
-            : " · kein Datenstand verfügbar"),
+            : " · kein Datenstand verfügbar") +
+          (source.source_valid_on ? " · Quellgültigkeit: " + date(source.source_valid_on) : "") +
+          (source.license ? " · " + source.license : ""),
         parent
       ).className = "briefing-source";
     };
@@ -2197,11 +2228,17 @@ setInterval(renderStatus, 10000);
       briefingOutput
     ).className = "nearby-note";
 
-    const roads = part(
-      "Lage in deiner Nähe",
-      data.data_status.roadworks
-    );
-    briefingNode("p", data.summary.text, roads);
+    const roadSource = data.sources.find(item => item.id === "roadworks");
+    const roadState = () => data.data_status.roadworks === "unavailable"
+      ? "unavailable" : window.lumeCitySnapshotStale({
+        status: data.data_status.roadworks,
+        source_valid_on: roadSource?.source_valid_on,
+        snapshot_fetched_at: roadSource?.fetched_at
+      }) ? "stale" : "ok";
+    const roads = part("Lage in deiner Nähe", roadState());
+    const roadStatusLine = roads.querySelector("p");
+    const roadSummaryLine = briefingNode("p", "", roads);
+    let emptyRoadLine = null;
 
     if (data.data_status.roadworks !== "unavailable") {
       const nearest = data.events.find(
@@ -2232,16 +2269,24 @@ setInterval(renderStatus, 10000);
           briefingNode("p", nearest.reason.trim(), roads);
         }
       } else {
-        briefingNode(
-          "p",
-          "Keine passenden Einträge im geladenen Datensatz. " +
-            "Das bestätigt keine störungsfreie Umgebung.",
-          roads
-        );
+        emptyRoadLine = briefingNode("p", "", roads);
       }
     }
 
     sourceNote("roadworks", roads);
+    const updateRoadAge = () => {
+      const status = roadState();
+      roadStatusLine.textContent = "Datenstatus: " + labels[status];
+      roadSummaryLine.textContent = status === "stale"
+        ? "Datenbestand veraltet – aktuelle Einschränkungen im Umkreis sind unklar. " +
+          (data.events.length ? "Die folgenden Einträge zeigen den letzten Datenstand." : "")
+        : data.summary.text;
+      if (emptyRoadLine) emptyRoadLine.textContent = status === "stale"
+        ? "Aus diesem Datenstand lässt sich keine aktuelle Aussage ableiten."
+        : "Keine passenden Einträge im geladenen Datensatz. Das bestätigt keine störungsfreie Umgebung.";
+    };
+    updateRoadAge();
+    briefingAgeTimer = setInterval(updateRoadAge, 30000);
 
     const water = part("Elbe · Pegel Dresden", data.water_level.status);
     const reading = data.water_level.data;
@@ -2388,6 +2433,7 @@ setInterval(renderStatus, 10000);
 
     const location = { ...selected };
     const radiusValue = Number(radius.value);
+    clearInterval(briefingAgeTimer);
     const requestVersion = ++briefingVersion;
 
     if (briefingController) briefingController.abort();
@@ -2798,6 +2844,7 @@ setInterval(renderStatus, 10000);
   });
 
   async function loadNearby() {
+    clearInterval(nearbyAgeTimer);
     if (!selected) return;
 
     const currentVersion = ++version;
@@ -2819,7 +2866,7 @@ setInterval(renderStatus, 10000);
       });
 
       const response = await fetch(
-        "https://api.lumeapp.space/api/v1/roadworks/nearby?" + query,
+        "https://api.lumeapp.space/api/v1/city-roadworks/nearby?" + query,
         { signal: activeController.signal, cache: "no-store" }
       );
 
@@ -2837,15 +2884,28 @@ setInterval(renderStatus, 10000);
 
       if (currentVersion !== version) return;
 
-      message.textContent =
-        (data.status === "stale" ? "Snapshot veraltet. " : "") +
-        data.count + " Quell-IDs innerhalb von " +
-        radius.value + " m. " +
-        "Status nach veröffentlichtem Zeitraum; " +
-        "Entfernung als Luftlinie zum Straßenabschnitt. " +
-        "Snapshot: " + formatTime(data.snapshot_fetched_at) + ".";
+      const updateNearbyAge = () => {
+        if (currentVersion !== version) return;
+        const stale = window.lumeCitySnapshotStale(data);
+        message.textContent = (stale
+          ? "Datenbestand veraltet – aktuelle Einschränkungen im Umkreis sind unklar. " +
+            (data.count ? "Letzter Stand: " + data.count + " Meldungen. " : "")
+          : data.count + " städtische Meldungen innerhalb von " + radius.value + " m. ") +
+          "Entfernung als Luftlinie zum Straßenabschnitt. " +
+          "Quellgültigkeit: " + (data.source_valid_on || "unbekannt") +
+          ". Abruf: " + formatTime(data.snapshot_fetched_at) + ".";
+        const empty = results.querySelector(".nearby-empty-state");
+        if (empty) empty.textContent = stale
+          ? "Aus diesem Datenstand lässt sich keine aktuelle Aussage ableiten."
+          : "Keine passenden Einträge im geladenen Datensatz. Das bestätigt keine störungsfreie Umgebung.";
+      };
+      updateNearbyAge();
+      nearbyAgeTimer = setInterval(updateNearbyAge, 30000);
 
-      // Display one entry per restriction; retain all segments.
+      for (const feature of data.features) {
+        feature.properties.restriction_type ??= feature.properties.type;
+      }
+      // Each fingerprint identifies a published record, not a construction project.
       const seen = new Set();
 
       for (const feature of data.features) {
@@ -2920,10 +2980,9 @@ setInterval(renderStatus, 10000);
 
       if (!data.features.length) {
         const item = document.createElement("li");
-        item.textContent =
-          "Keine passenden Einträge im geladenen Datensatz. " +
-          "Das bestätigt keine störungsfreie Umgebung.";
+        item.className = "nearby-empty-state";
         results.appendChild(item);
+        updateNearbyAge();
       }
     } catch (error) {
       if (currentVersion !== version) return;
@@ -4175,11 +4234,12 @@ setInterval(renderStatus, 10000);
   document.body.append(weatherToggle, weatherDrawer);
   document.getElementById("sidebar-weather-view")?.remove();
 
-  const phone = window.matchMedia("(max-width: 760px)");
+  const phone = window.matchMedia("(max-width: 820px)");
   const openSearch = window.lumeSetSidebarOpen;
   let weatherOpen = false;
 
   function setWeatherOpen(open, focus = false) {
+    const drawerHadFocus = weatherDrawer.contains(document.activeElement);
     weatherOpen = Boolean(open);
 
     if (weatherOpen && phone.matches) openSearch(false);
@@ -4188,16 +4248,20 @@ setInterval(renderStatus, 10000);
     weatherDrawer.inert = !weatherOpen;
     weatherToggle.setAttribute("aria-expanded", String(weatherOpen));
     document.body.classList.toggle("weather-is-open", weatherOpen);
+    window.dispatchEvent(new CustomEvent("lume-drawer-state", {
+      detail: { open: weatherOpen }
+    }));
 
     if (weatherOpen && focus) {
       weatherClose.focus({ preventScroll: true });
     }
 
-    if (!weatherOpen && weatherDrawer.contains(document.activeElement)) {
-      weatherToggle.focus();
+    if (!weatherOpen && drawerHadFocus) {
+      (window.lumeDrawerReturnButton || weatherToggle).focus({ preventScroll: true });
     }
   }
 
+  window.lumeSetWeatherOpen = setWeatherOpen;
   window.lumeSetSidebarOpen = (open, focus = false) => {
     if (open && phone.matches) setWeatherOpen(false);
     openSearch(open, focus);
@@ -4272,7 +4336,7 @@ setInterval(renderStatus, 10000);
 
     <h3>Wetter & Elbe</h3>
     <p>Wetter: Open-Meteo, Modellschätzung für Dresden.
-       Amtliche Wetterwarnungen sind noch nicht angebunden.</p>
+       Amtliche Wetterwarnungen: Deutscher Wetterdienst (DWD).</p>
     <p>Pegel: PEGELONLINE / WSV. Der Wasserstand bestätigt
        keine Befahrbarkeit von Uferwegen.</p>
     <p>Datenstände und Messzeiten stehen an den jeweiligen Werten.
@@ -4303,7 +4367,7 @@ setInterval(renderStatus, 10000);
   const roadNote = filters.querySelector(".roadworks-note");
   if (roadNote) sourceSlot("road-source-notes").append(roadNote);
 
-  const roadLink = filters.querySelector('a[href*="baustellen"]');
+  const roadLink = filters.querySelector('a[href*="kommisdd.dresden.de"]');
   if (roadLink) sourceSlot("road-source-notes").append(roadLink);
 
   const attribution = [...nearby.querySelectorAll("p")].find(
@@ -4348,30 +4412,8 @@ setInterval(renderStatus, 10000);
     update();
   }
 
-  // Briefing citations use the same footer panel.
-  const output = document.getElementById("briefing-output");
+  // Briefing limitations and expandable source links remain beside the briefing.
 
-  if (output) {
-    const moveBriefingNotes = () => {
-      const details = output.querySelector("details");
-      const limitation = output.querySelector(".briefing-limitation");
-      const target = sourceSlot("briefing-source-notes");
-
-      if (details) {
-        target.replaceChildren(
-          ...(limitation ? [limitation] : []),
-          details
-        );
-      } else if (!output.children.length) {
-        target.replaceChildren();
-      }
-    };
-
-    new MutationObserver(moveBriefingNotes).observe(output, {
-      childList: true
-    });
-    moveBriefingNotes();
-  }
 })();
 </script>
 
@@ -4465,6 +4507,7 @@ setInterval(renderStatus, 10000);
   .lume-dwd-content .dwd-meta { color: var(--text-muted); }
   .lume-dwd-content .dwd-attention { color: #8b3d24; font-weight: 700; }
 </style>
+<link rel="stylesheet" href="/lume-identity.css">
 
 <script id="lume-dwd">
 (() => {
@@ -4697,6 +4740,7 @@ setInterval(renderStatus, 10000);
 })();
 </script>
 
+<script src="/lume-topics.js"></script>
 <script src="/lume-pwa.js" defer></script>
 </body>
 </html>
