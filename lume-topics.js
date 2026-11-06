@@ -59,13 +59,15 @@
   function syncMap() {
     if (!map) return;
     const visibility = state.roads ? "visible" : "none";
-    for (const id of ["roadworks-visible", "roadworks-hit",
+    for (const id of ["roadworks-visible", "roadworks-hit", "roadworks-symbols",
       "selected-roadwork-glow", "selected-roadwork-outline", "selected-roadwork-core"]) {
       if (map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== visibility) {
         map.setLayoutProperty(id, "visibility", visibility);
       }
     }
   }
+  window.lumeSyncTopicMap = syncMap;
+  window.lumeIsRoadsVisible = () => map ? state.roads : true;
 
   function render() {
     for (const id of Object.keys(buttons)) {
@@ -116,8 +118,10 @@
     window.lumeSetWeatherOpen(false);
     window.lumeDrawerReturnButton.focus({ preventScroll: true });
   }, true);
-  if (map) map.on("styledata", syncMap);
-  else {
+  if (map) {
+    map.on("styledata", syncMap);
+    map.on("sourcedata", syncMap);
+  } else {
     state.roads = false;
     buttons.roads.disabled = true;
     buttons.roads.title = "Karte nicht verfügbar; Meldungen bleiben über die Ortssuche erreichbar.";
