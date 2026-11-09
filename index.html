@@ -5250,7 +5250,7 @@
       font-weight: 700;
     }
   </style>
-  <link rel="stylesheet" href="/lume-identity.css?v=20261105">
+  <link rel="stylesheet" href="/lume-identity.css?v=20261109">
 
   <script id="lume-dwd">
     (() => {
@@ -5484,6 +5484,515 @@
   </script>
 
   <script src="/lume-topics.js?v=20261105"></script>
+
+  <section id="lume-opening" class="lume-opening" aria-labelledby="lume-opening-title">
+    <div class="lume-opening-backdrop" id="lume-opening-backdrop" aria-hidden="true"></div>
+
+    <svg class="lume-opening-motif" id="lume-opening-motif" viewBox="0 0 1440 900"
+      preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <!-- Abstract monochrome street-grid & Elbe curve motif (non-traffic decorative watermark) -->
+      <path class="motif-river"
+        d="M -60 640 C 220 620, 410 350, 720 390 C 1030 430, 1180 220, 1500 250" />
+      <path class="motif-river"
+        d="M -60 664 C 225 644, 418 374, 720 414 C 1022 454, 1185 244, 1500 274" />
+      <path class="motif-axis" d="M 140 -40 L 620 940" />
+      <path class="motif-axis" d="M 980 -40 L 540 940" />
+      <path d="M -40 210 L 1480 540" />
+      <path d="M -40 480 L 1480 170" />
+      <path d="M 340 -40 L 1120 940" />
+      <path d="M 720 -40 L 720 940" />
+      <circle cx="720" cy="402" r="148" />
+      <circle cx="720" cy="402" r="290" />
+      <circle cx="720" cy="402" r="440" />
+    </svg>
+
+    <div class="lume-opening-top" id="lume-opening-top">
+      <a href="?view=map" class="lume-opening-brand" id="lume-opening-brand-link"
+        data-opening-action="map">
+        <span class="lume-opening-brand-mark" aria-hidden="true">
+          <span class="lume-opening-brand-dot"></span>
+        </span>
+        <span>Lume Dresden</span>
+        <span class="lume-opening-brand-sub">Offene Stadtdaten</span>
+      </a>
+    </div>
+
+    <div class="lume-opening-center" id="lume-opening-center">
+      <h2 id="lume-opening-title" class="lume-opening-headline">
+        <span>Dresden verändert sich.</span>
+        <span>Bleib im Bild.</span>
+      </h2>
+      <p class="lume-opening-sub">
+        Verkehrsmeldungen, Wetter und Elbe-Pegel –
+        entdecke die veröffentlichten Daten für deine Umgebung.
+      </p>
+    </div>
+
+    <div class="lume-opening-bottom" id="lume-opening-bottom">
+      <button type="button" id="lume-opening-scroll-cue" class="lume-opening-scroll-cue"
+        data-opening-action="map" aria-label="Scrollen und entdecken">
+        <span class="lume-opening-cue-desktop">Scrollen und entdecken</span>
+        <span class="lume-opening-cue-touch">Nach oben wischen</span>
+        <span class="lume-opening-cue-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+
+      <div class="lume-opening-dock-wrap">
+        <nav class="lume-opening-nav" aria-label="Einstieg und Projektseiten">
+          <a href="?view=map" data-opening-action="map">Karte</a>
+          <a href="/wissen.html">Aktuelles &amp; Wissen</a>
+          <a href="ueber-lume.html">Über Lume &amp; mich</a>
+          <button type="button" class="lume-opening-nav-link" id="lume-opening-sources">
+            Quellen &amp; Hinweise
+          </button>
+          <a href="impressum.html">Impressum</a>
+        </nav>
+      </div>
+    </div>
+  </section>
+
+  <script id="lume-opening-script">
+    (() => {
+      const opening = document.getElementById("lume-opening");
+      if (!opening) return;
+
+      const backdrop = document.getElementById("lume-opening-backdrop");
+      const motif = document.getElementById("lume-opening-motif");
+      const topBar = document.getElementById("lume-opening-top");
+      const centerHero = document.getElementById("lume-opening-center");
+      const bottomBar = document.getElementById("lume-opening-bottom");
+      const scrollCue = document.getElementById("lume-opening-scroll-cue");
+
+      const mapEl = document.getElementById("map");
+      if (mapEl && !mapEl.hasAttribute("tabindex")) {
+        mapEl.setAttribute("tabindex", "0");
+      }
+
+      const reduceMotionQuery = window.matchMedia
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : { matches: false };
+      const touchQuery = window.matchMedia
+        ? window.matchMedia("(hover: none), (pointer: coarse), (max-width: 760px)")
+        : { matches: false };
+
+      function syncCueAriaLabel() {
+        if (!scrollCue) return;
+        scrollCue.setAttribute(
+          "aria-label",
+          touchQuery.matches
+            ? "Nach oben wischen"
+            : "Scrollen und entdecken"
+        );
+      }
+      syncCueAriaLabel();
+      touchQuery.addEventListener?.("change", syncCueAriaLabel);
+
+      function buildUrlWithView(viewMode) {
+        const params = new URLSearchParams(window.location.search);
+        if (viewMode) {
+          params.set("view", viewMode);
+        } else {
+          params.delete("view");
+        }
+        const qs = params.toString();
+        return window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+      }
+
+      function syncDirectLinks() {
+        const mapHref = buildUrlWithView("map");
+        for (const link of opening.querySelectorAll('a[data-opening-action="map"]')) {
+          link.setAttribute("href", mapHref);
+        }
+      }
+
+      const backgroundSelectors = [
+        ".lume-floating-brand",
+        "#sidebar-toggle",
+        "#basemap-switch",
+        "#basemap-status",
+        "#map",
+        "#lume-sidebar",
+        "#weather-drawer-toggle",
+        "#weather-drawer",
+        ".lume-topics",
+        ".utility-bar"
+      ];
+
+      function setBackgroundInert(isInert) {
+        for (const sel of backgroundSelectors) {
+          const node = document.querySelector(sel);
+          if (!node) continue;
+          if (isInert) {
+            if (node.dataset.lumePrevInert === undefined) {
+              node.dataset.lumePrevInert = node.inert ? "1" : "0";
+            }
+            node.inert = true;
+          } else {
+            if (sel === "#lume-sidebar") {
+              node.inert = document.body.classList.contains("sidebar-is-closed");
+            } else if (sel === "#weather-drawer") {
+              node.inert = node.hidden;
+            } else if (node.dataset.lumePrevInert !== undefined) {
+              node.inert = node.dataset.lumePrevInert === "1";
+            } else {
+              node.inert = false;
+            }
+            delete node.dataset.lumePrevInert;
+          }
+        }
+      }
+
+      let isOpeningVisible = true;
+      let progress = 0;
+      let animFrame = null;
+      let touchStartY = null;
+      let lastTouchY = null;
+      let touchMoved = false;
+
+      const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+      function applyProgress(nextValue) {
+        progress = clamp(nextValue, 0, 1);
+        opening.dataset.progress = progress.toFixed(3);
+        opening.style.setProperty("--opening-progress", progress.toFixed(4));
+
+        const reduced = Boolean(reduceMotionQuery.matches);
+        const heroOpacity = clamp(1 - progress * 1.28, 0, 1);
+        const heroTranslateY = reduced ? 0 : -(progress * 56);
+        const heroScale = reduced ? 1 : 1 - progress * 0.04;
+        const chromeOpacity = clamp(1 - progress * 1.45, 0, 1);
+        const bottomTranslateY = reduced ? 0 : progress * 20;
+        const topTranslateY = reduced ? 0 : -(progress * 16);
+        const overlayOpacity = clamp(1 - Math.pow(progress, 1.12), 0, 1);
+
+        if (centerHero) {
+          centerHero.style.opacity = String(heroOpacity);
+          centerHero.style.transform = reduced
+            ? "none"
+            : `translate3d(0, ${heroTranslateY.toFixed(2)}px, 0) scale(${heroScale.toFixed(4)})`;
+        }
+        if (bottomBar) {
+          bottomBar.style.opacity = String(chromeOpacity);
+          bottomBar.style.transform = reduced
+            ? "none"
+            : `translate3d(0, ${bottomTranslateY.toFixed(2)}px, 0)`;
+        }
+        if (topBar) {
+          topBar.style.opacity = String(chromeOpacity);
+          topBar.style.transform = reduced
+            ? "none"
+            : `translate3d(0, ${topTranslateY.toFixed(2)}px, 0)`;
+        }
+        if (motif) {
+          motif.style.opacity = String(clamp((1 - progress * 1.35) * 0.9, 0, 0.9));
+        }
+        if (backdrop) {
+          backdrop.style.opacity = String(overlayOpacity);
+          if (!reduced && progress > 0.02) {
+            const innerRadius = Math.round(progress * 82);
+            const outerRadius = Math.round(innerRadius + 28);
+            const mask = `radial-gradient(circle at 50% 48%, rgba(0,0,0,${(1 - progress).toFixed(3)}) ${innerRadius}%, rgba(0,0,0,1) ${outerRadius}%)`;
+            backdrop.style.webkitMaskImage = mask;
+            backdrop.style.maskImage = mask;
+          } else {
+            backdrop.style.webkitMaskImage = "none";
+            backdrop.style.maskImage = "none";
+          }
+        }
+      }
+
+      function cancelProgressAnimation() {
+        if (animFrame !== null && typeof cancelAnimationFrame === "function") {
+          cancelAnimationFrame(animFrame);
+        }
+        animFrame = null;
+      }
+
+      function focusAfterEntry(mode) {
+        if (mode === "nearby" || !map) {
+          if (window.lumeSetSidebarOpen) {
+            window.lumeSetSidebarOpen(true, true);
+          }
+          const searchInput = document.getElementById("place-search-input");
+          if (searchInput) {
+            searchInput.focus({ preventScroll: true });
+            return;
+          }
+        } else {
+          if (map) {
+            map.resize?.();
+          }
+          const target = mapEl || document.getElementById("sidebar-toggle");
+          if (target) {
+            target.focus({ preventScroll: true });
+          }
+        }
+      }
+
+      function completeDismiss(mode = "map", { updateUrl = true } = {}) {
+        cancelProgressAnimation();
+        applyProgress(1);
+        isOpeningVisible = false;
+        opening.hidden = true;
+        opening.inert = true;
+        document.body.classList.remove("lume-opening-active");
+        setBackgroundInert(false);
+
+        if (updateUrl && window.history?.replaceState) {
+          const targetView = mode === "nearby" ? "nearby" : "map";
+          window.history.replaceState(null, "", buildUrlWithView(targetView));
+        }
+
+        focusAfterEntry(mode);
+      }
+
+      function animateProgressTo(target, mode = "map", { updateUrl = true } = {}) {
+        cancelProgressAnimation();
+        if (
+          reduceMotionQuery.matches ||
+          typeof requestAnimationFrame !== "function"
+        ) {
+          if (target >= 1) {
+            completeDismiss(mode, { updateUrl });
+          } else {
+            applyProgress(target);
+          }
+          return;
+        }
+
+        const step = () => {
+          const diff = target - progress;
+          if (Math.abs(diff) <= 0.025) {
+            if (target >= 1) {
+              completeDismiss(mode, { updateUrl });
+            } else {
+              applyProgress(target);
+              animFrame = null;
+            }
+            return;
+          }
+          applyProgress(progress + diff * 0.26);
+          animFrame = requestAnimationFrame(step);
+        };
+        animFrame = requestAnimationFrame(step);
+      }
+
+      function stepGestureProgress(deltaProgress) {
+        if (!isOpeningVisible) return;
+        cancelProgressAnimation();
+        const next = clamp(progress + deltaProgress, 0, 1);
+        if (next >= 0.995) {
+          completeDismiss("map", { updateUrl: true });
+        } else {
+          applyProgress(next);
+        }
+      }
+
+      function enterApp(mode = "map", { immediate = false, updateUrl = true } = {}) {
+        if (!isOpeningVisible) {
+          if (updateUrl && window.history?.replaceState) {
+            const targetView = mode === "nearby" ? "nearby" : "map";
+            window.history.replaceState(null, "", buildUrlWithView(targetView));
+          }
+          focusAfterEntry(mode);
+          return;
+        }
+
+        if (immediate || reduceMotionQuery.matches) {
+          completeDismiss(mode, { updateUrl });
+          return;
+        }
+
+        animateProgressTo(1, mode, { updateUrl });
+      }
+
+      function showOpening({ updateUrl = true } = {}) {
+        cancelProgressAnimation();
+        isOpeningVisible = true;
+        syncDirectLinks();
+        applyProgress(0);
+        opening.hidden = false;
+        opening.inert = false;
+        document.body.classList.add("lume-opening-active");
+        setBackgroundInert(true);
+
+        if (updateUrl && window.history?.replaceState) {
+          window.history.replaceState(null, "", buildUrlWithView(null));
+        }
+
+        if (scrollCue) {
+          scrollCue.focus({ preventScroll: true });
+        }
+      }
+
+      window.lumeEnterApp = enterApp;
+      window.lumeShowOpening = showOpening;
+      window.lumeSetOpeningProgress = value => {
+        if (!isOpeningVisible) return;
+        const clamped = clamp(Number(value) || 0, 0, 1);
+        if (clamped >= 1) {
+          completeDismiss("map", { updateUrl: true });
+        } else {
+          applyProgress(clamped);
+        }
+      };
+      window.lumeGetOpeningProgress = () => progress;
+
+      for (const node of opening.querySelectorAll("[data-opening-action]")) {
+        node.addEventListener("click", event => {
+          if (
+            event.button && event.button !== 0 ||
+            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+          ) {
+            return;
+          }
+          event.preventDefault();
+          const action = node.getAttribute("data-opening-action");
+          enterApp(action === "nearby" ? "nearby" : "map");
+        });
+      }
+
+      const sourcesBtn = document.getElementById("lume-opening-sources");
+      if (sourcesBtn) {
+        sourcesBtn.addEventListener("click", () => {
+          enterApp("map", { immediate: true });
+          const dialog = document.getElementById("lume-source-dialog");
+          if (dialog && !dialog.open) {
+            dialog.showModal?.();
+          }
+        });
+      }
+
+      // Progressive wheel reveal: scrolling down clears overlay; scrolling up reverses before completion.
+      // preventDefault + stopPropagation prevents the wheel gesture from zooming the underlying map.
+      const SCROLL_DISTANCE_PX = 480;
+      opening.addEventListener("wheel", event => {
+        if (!isOpeningVisible) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        let deltaPx = event.deltaY;
+        if (event.deltaMode === 1) deltaPx *= 28;
+        else if (event.deltaMode === 2) deltaPx *= 360;
+        deltaPx = clamp(deltaPx, -140, 140);
+
+        stepGestureProgress(deltaPx / SCROLL_DISTANCE_PX);
+      }, { passive: false });
+
+      // Progressive upward touch swipe reveal: swiping up reveals; swiping down reverses before completion.
+      const SWIPE_DISTANCE_PX = 260;
+      opening.addEventListener("touchstart", event => {
+        if (!isOpeningVisible || event.touches.length !== 1) return;
+        touchStartY = event.touches[0].clientY;
+        lastTouchY = touchStartY;
+        touchMoved = false;
+        cancelProgressAnimation();
+      }, { passive: true });
+
+      opening.addEventListener("touchmove", event => {
+        if (!isOpeningVisible || lastTouchY === null || event.touches.length !== 1) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        const currentY = event.touches[0].clientY;
+        const dy = lastTouchY - currentY;
+        lastTouchY = currentY;
+        if (Math.abs(currentY - touchStartY) > 4) {
+          touchMoved = true;
+        }
+        stepGestureProgress(dy / SWIPE_DISTANCE_PX);
+      }, { passive: false });
+
+      const finishTouch = () => {
+        if (!isOpeningVisible || !touchMoved) {
+          touchStartY = null;
+          lastTouchY = null;
+          touchMoved = false;
+          return;
+        }
+        touchStartY = null;
+        lastTouchY = null;
+        touchMoved = false;
+        if (progress >= 0.72) {
+          animateProgressTo(1, "map", { updateUrl: true });
+        } else if (progress > 0 && progress < 0.22) {
+          animateProgressTo(0, "map", { updateUrl: false });
+        }
+      };
+
+      opening.addEventListener("touchend", finishTouch, { passive: true });
+      opening.addEventListener("touchcancel", finishTouch, { passive: true });
+
+      document.addEventListener("keydown", event => {
+        if (!isOpeningVisible) return;
+        if (event.key === "Escape" || event.key === "PageDown") {
+          event.preventDefault();
+          enterApp("map");
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          stepGestureProgress(0.25);
+        } else if (event.key === "ArrowUp" && progress > 0) {
+          event.preventDefault();
+          stepGestureProgress(-0.25);
+        }
+      });
+
+      const utilityBar = document.querySelector(".utility-bar");
+      if (utilityBar) {
+        const reopenBtn = document.createElement("button");
+        reopenBtn.type = "button";
+        reopenBtn.id = "lume-reopen-intro";
+        reopenBtn.textContent = "Startansicht";
+        reopenBtn.addEventListener("click", () => {
+          showOpening({ updateUrl: true });
+        });
+        utilityBar.prepend(reopenBtn);
+      }
+
+      // Check initial URL state for direct map/location/filter entry
+      syncDirectLinks();
+      applyProgress(0);
+      const initParams = new URLSearchParams(window.location.search);
+      const initView = (initParams.get("view") || "").toLowerCase();
+      const initHash = (window.location.hash || "").toLowerCase();
+      const initFilter = initParams.get("filter");
+      const initQuery = initParams.get("q");
+      const hasLocationParams =
+        (initParams.has("lat") && initParams.has("lon")) ||
+        Boolean(initQuery) ||
+        initParams.has("id") ||
+        initParams.has("source_id");
+
+      if (initFilter && window.lumeRestrictions?.setFilter) {
+        window.lumeRestrictions.setFilter(initFilter);
+      }
+
+      if (initQuery) {
+        const searchInput = document.getElementById("place-search-input");
+        if (searchInput) {
+          searchInput.value = initQuery;
+        }
+      }
+
+      if (initView === "nearby" || initView === "search" ||
+          ["#nearby", "#suche", "#umgebung"].includes(initHash) ||
+          hasLocationParams) {
+        completeDismiss("nearby", { updateUrl: false });
+      } else if (
+        initView === "map" || initView === "app" ||
+        ["#map", "#karte", "#app"].includes(initHash)
+      ) {
+        completeDismiss("map", { updateUrl: false });
+      } else {
+        document.body.classList.add("lume-opening-active");
+        setBackgroundInert(true);
+      }
+    })();
+  </script>
   <script src="/lume-pwa.js" defer></script>
 </body>
 

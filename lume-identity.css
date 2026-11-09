@@ -179,3 +179,386 @@ body .lume-location-privacy .nearby-note { font-size: .8rem; }
   body .lume-floating-brand, body .lume-floating-brand h1,
   body .lume-floating-brand .brand-dot { animation: none !important; }
 }
+
+/* Typebot-inspired opening experience adapted to Lume's forest-green & cream identity */
+body.lume-opening-active {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Keep the map as the opening background, but visually hide application panels,
+   filters, duplicate branding and map controls until the reveal finishes. */
+body.lume-opening-active .lume-floating-brand,
+body.lume-opening-active #sidebar-toggle,
+body.lume-opening-active #basemap-switch,
+body.lume-opening-active #basemap-status,
+body.lume-opening-active #lume-sidebar,
+body.lume-opening-active #weather-drawer-toggle,
+body.lume-opening-active #weather-drawer,
+body.lume-opening-active .lume-topics,
+body.lume-opening-active .utility-bar,
+body.lume-opening-active .maplibregl-control-container {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.lume-opening {
+  --opening-progress: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: max(22px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  color: #f6f3ec;
+  isolation: isolate;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+.lume-opening[hidden] {
+  display: none !important;
+}
+
+/* Green overlay layer that clears progressively to reveal the map underneath */
+.lume-opening-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(36, 91, 66, 0.38) 0%, rgba(22, 48, 36, 0.94) 56%, #0e2017 100%);
+  pointer-events: none;
+  will-change: opacity, mask-image, -webkit-mask-image;
+}
+
+/* Understated decorative street-network motif (monochrome, clearly non-traffic) */
+.lume-opening-motif {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.9;
+  will-change: opacity, transform;
+}
+
+.lume-opening-motif path,
+.lume-opening-motif circle {
+  fill: none;
+  stroke: rgba(246, 243, 236, 0.055);
+  stroke-width: 1.15;
+  vector-effect: non-scaling-stroke;
+}
+
+.lume-opening-motif .motif-river {
+  stroke: rgba(246, 243, 236, 0.085);
+  stroke-width: 2.2;
+}
+
+.lume-opening-motif .motif-axis {
+  stroke: rgba(246, 243, 236, 0.07);
+  stroke-dasharray: 180 220;
+  stroke-dashoffset: 0;
+  animation: lume-motif-drift 22s ease-in-out infinite alternate;
+}
+
+@keyframes lume-motif-drift {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -120; }
+}
+
+/* Top-left compact brand identity (matching Typebot's top-left mark) */
+.lume-opening-top {
+  width: 100%;
+  max-width: 1240px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  will-change: opacity, transform;
+}
+
+.lume-opening-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #f6f3ec;
+  text-decoration: none;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.lume-opening-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid rgba(246, 243, 236, 0.72);
+  border-radius: 7px;
+  background: rgba(246, 243, 236, 0.06);
+}
+
+.lume-opening-brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #70ffe5;
+  box-shadow: 0 0 10px rgba(112, 255, 229, 0.55);
+}
+
+.lume-opening-brand-sub {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: rgba(246, 243, 236, 0.64);
+  margin-left: 2px;
+}
+
+/* Center hero stack */
+.lume-opening-center {
+  position: relative;
+  max-width: 860px;
+  width: 100%;
+  margin: auto;
+  padding: 28px 0 36px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: opacity, transform;
+}
+
+.lume-opening-headline {
+  margin: 0;
+  color: #f6f3ec;
+  font-size: clamp(2.25rem, 6.2vw, 4.7rem);
+  font-weight: 700;
+  line-height: 1.03;
+  letter-spacing: -0.042em;
+  text-wrap: balance;
+  animation: lume-opening-reveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lume-opening-headline span {
+  display: block;
+}
+
+.lume-opening-sub {
+  margin: 22px auto 0;
+  max-width: 35rem;
+  color: rgba(246, 243, 236, 0.76);
+  font-size: clamp(0.98rem, 1.55vw, 1.16rem);
+  font-weight: 400;
+  line-height: 1.55;
+  text-wrap: pretty;
+  animation: lume-opening-reveal 0.52s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+/* Bottom stack: subtle animated scroll/swipe cue button above the floating dock */
+.lume-opening-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  will-change: opacity, transform;
+}
+
+.lume-opening-scroll-cue {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(246, 243, 236, 0.78);
+  font: 500 0.8rem/1.25 "Lume Plex", system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.lume-opening-scroll-cue:hover {
+  color: #f6f3ec;
+  background: rgba(246, 243, 236, 0.07);
+  border-color: rgba(246, 243, 236, 0.18);
+}
+
+.lume-opening-cue-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #70ffe5;
+  animation: lume-cue-float 2.2s ease-in-out infinite;
+}
+
+.lume-opening-cue-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.lume-opening-cue-touch {
+  display: none;
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 760px) {
+  .lume-opening-cue-desktop {
+    display: none;
+  }
+  .lume-opening-cue-touch {
+    display: inline;
+  }
+}
+
+@keyframes lume-cue-float {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.72;
+  }
+  50% {
+    transform: translateY(4px);
+    opacity: 1;
+  }
+}
+
+/* Compact floating navigation bar near the bottom (matching Typebot's bottom pill) */
+.lume-opening-dock-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.lume-opening-nav {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid rgba(246, 243, 236, 0.16);
+  border-radius: 16px;
+  background: rgba(11, 25, 18, 0.84);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(14px);
+  max-width: 100%;
+}
+
+.lume-opening-nav a,
+.lume-opening-nav button.lume-opening-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 6px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(246, 243, 236, 0.84);
+  font: 500 0.82rem/1.2 "Lume Plex", system-ui, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lume-opening-nav a:hover,
+.lume-opening-nav button.lume-opening-nav-link:hover {
+  color: #f6f3ec;
+  background: rgba(246, 243, 236, 0.09);
+}
+
+.lume-opening-nav a[data-opening-action="map"] {
+  background: rgba(246, 243, 236, 0.12);
+  color: #f6f3ec;
+  font-weight: 600;
+}
+
+.lume-opening-nav a[data-opening-action="map"]:hover {
+  background: rgba(246, 243, 236, 0.2);
+}
+
+.lume-opening-scroll-cue:focus-visible,
+.lume-opening-nav a:focus-visible,
+.lume-opening-nav button:focus-visible,
+.lume-opening-brand:focus-visible,
+#lume-reopen-intro:focus-visible {
+  outline: 3px solid #70ffe5;
+  outline-offset: 3px;
+}
+
+#lume-reopen-intro {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--olive-accent);
+  font: inherit;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@keyframes lume-opening-reveal {
+  from {
+    opacity: 0.01;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .lume-opening {
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  }
+  .lume-opening-brand-sub {
+    display: none;
+  }
+  .lume-opening-center {
+    padding: 18px 0 24px;
+  }
+  .lume-opening-headline {
+    font-size: clamp(1.95rem, 8.6vw, 2.85rem);
+    line-height: 1.06;
+  }
+  .lume-opening-sub {
+    margin-top: 16px;
+    font-size: 0.95rem;
+  }
+  .lume-opening-bottom {
+    gap: 10px;
+  }
+  .lume-opening-nav {
+    padding: 6px;
+    gap: 2px 4px;
+    border-radius: 14px;
+  }
+  .lume-opening-nav a,
+  .lume-opening-nav button.lume-opening-nav-link {
+    min-height: 36px;
+    padding: 5px 8px;
+    font-size: 0.76rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lume-opening,
+  .lume-opening-headline,
+  .lume-opening-sub,
+  .lume-opening-cue-icon,
+  .lume-opening-motif .motif-axis {
+    animation: none !important;
+    transition: none !important;
+  }
+}
