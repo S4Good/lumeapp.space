@@ -169,12 +169,383 @@ body #weather-drawer .lume-water-only .brand-row {
 }
 body.lume-map-unavailable .telemetry-stack { top: 160px; }
 body .lume-location-privacy .nearby-note { font-size: .8rem; }
-@media (max-width: 760px) {
-  .lume-topics { top: 132px; right: 12px; gap: 3px; padding: 4px; }
-  .lume-topics button { padding: 7px 9px; font-size: .8rem; }
-  body .lume-weather-drawer { top: 194px; }
-  body .telemetry-stack, body.lume-map-unavailable .telemetry-stack { top: 194px; }
+
+/* "Info & Rechtliches" footer trigger exists for compact phones only. Its extra
+   dialog section shows only when the dialog is opened from that trigger. */
+#lume-info-open { display: none; }
+#lume-source-dialog:not(.lume-source-dialog--info) .source-dialog-more { display: none; }
+#lume-source-dialog .source-dialog-more ul {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 4px;
+  padding: 0;
+  list-style: none;
 }
+#lume-source-dialog .source-dialog-more li { margin: 0; }
+#lume-source-dialog .source-dialog-more li[hidden] { display: none; }
+#lume-source-dialog .source-dialog-more a,
+#lume-source-dialog .source-dialog-install {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #16302422;
+  border-radius: 10px;
+  background: #ffffff88;
+  color: #163024;
+  font: 600 .86rem/1.3 "Lume Plex", system-ui, sans-serif;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+#lume-source-dialog .source-dialog-more a:focus-visible,
+#lume-source-dialog .source-dialog-install:focus-visible {
+  outline: 3px solid #327b9a;
+  outline-offset: 3px;
+}
+
+/* Basemap switch desktop & base setup */
+.basemap-mobile-toggle { display: none; }
+.basemap-options { display: flex; gap: 3px; }
+
+@media (max-width: 760px) {
+  :root {
+    --lume-safe-top: max(10px, env(safe-area-inset-top, 0px));
+    --lume-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --lume-safe-left: max(12px, env(safe-area-inset-left, 0px));
+    --lume-safe-right: max(12px, env(safe-area-inset-right, 0px));
+    /* Usable row width between the safe-area insets, minus an 8px gutter. */
+    --lume-row-width: calc(100% - var(--lume-safe-left) - var(--lume-safe-right) - 8px);
+  }
+
+  /* Row 1: Brand centered horizontally on the screen */
+  body .lume-floating-brand {
+    top: var(--lume-safe-top);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    height: auto;
+    min-height: 38px;
+    max-width: var(--lume-row-width);
+    padding: 5px 14px;
+    gap: 8px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 18px rgba(22, 48, 36, 0.08);
+  }
+  body .lume-floating-brand .brand-dot {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid var(--card-border);
+    border-radius: 7px;
+    background: rgba(22, 48, 36, 0.05);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  body .lume-floating-brand .brand-dot::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2b5740;
+    box-shadow: 0 0 6px rgba(43, 87, 64, 0.45);
+  }
+  body .lume-floating-brand > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+  }
+  body .lume-floating-brand h1 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    white-space: nowrap;
+    margin: 0;
+  }
+  body .lume-floating-brand p {
+    display: inline;
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  /* Row 2: "Suche", "Verkehr", "Wetter", and "Pegel" together on one horizontal
+     control row below the centered brand. Each button is at least 44x44px. */
+  body #sidebar-toggle.lume-map-button {
+    top: calc(var(--lume-safe-top) + 44px);
+    left: var(--lume-safe-left);
+    right: auto;
+    width: calc((100% - var(--lume-safe-left) - var(--lume-safe-right) - 15px) * 0.25);
+    height: 48px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 4px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    background: rgba(246, 243, 236, 0.97);
+    color: var(--text-primary);
+    box-shadow: 0 4px 14px rgba(22, 48, 36, 0.08);
+    cursor: pointer;
+  }
+  body #sidebar-toggle > span:first-child {
+    font-size: 1.05rem;
+    line-height: 1;
+  }
+  body #sidebar-toggle > span:last-child {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+  }
+  body:not(.sidebar-is-closed) #sidebar-toggle.lume-map-button {
+    background: #163024;
+    color: #f6f3ec;
+  }
+
+  .lume-topics {
+    top: calc(var(--lume-safe-top) + 44px);
+    left: calc(var(--lume-safe-left) + (100% - var(--lume-safe-left) - var(--lume-safe-right) - 15px) * 0.25 + 5px);
+    right: var(--lume-safe-right);
+    width: auto;
+    height: 48px;
+    display: flex;
+    gap: 5px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    z-index: 24;
+  }
+  .lume-topics button {
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    height: 100%;
+    padding: 4px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    background: rgba(246, 243, 236, 0.97);
+    color: var(--text-primary);
+    box-shadow: 0 4px 14px rgba(22, 48, 36, 0.08);
+    font-size: .72rem;
+    line-height: 1.1;
+  }
+  .lume-topics button span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .72rem;
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+  }
+  .lume-topics svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  /* Mobile basemap switch & controls: right-aligned vertical control stack
+     directly above the +/- zoom group, sharing the exact same right edge with an 8px gap. */
+  .maplibregl-ctrl-bottom-right {
+    position: absolute;
+    bottom: var(--lume-safe-bottom);
+    right: env(safe-area-inset-right, 0px);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 25;
+  }
+
+  body #basemap-switch.lume-basemap-switch {
+    pointer-events: auto;
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    margin: 0 12px 8px 0;
+    padding: 0;
+    gap: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .basemap-mobile-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    background: rgba(246, 243, 236, 0.96);
+    color: var(--olive-dark);
+    box-shadow: 0 4px 16px rgba(22, 48, 36, 0.14);
+    cursor: pointer;
+    padding: 0;
+  }
+  .basemap-mobile-toggle svg {
+    width: 22px;
+    height: 22px;
+  }
+  .basemap-mobile-toggle:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 2px;
+  }
+
+  body #basemap-switch.lume-basemap-switch .basemap-options {
+    display: none;
+    position: absolute;
+    bottom: 50px;
+    right: 0;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    background: #f6f3ec;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(22, 48, 36, 0.18);
+    min-width: 110px;
+  }
+
+  body #basemap-switch.lume-basemap-switch.is-open .basemap-options {
+    display: flex;
+  }
+
+  body #basemap-switch.lume-basemap-switch .basemap-options button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: #ffffff88;
+    color: var(--text-primary);
+    font: 600 .82rem/1.2 "Lume Plex", system-ui, sans-serif;
+    cursor: pointer;
+  }
+
+  body #basemap-switch.lume-basemap-switch .basemap-options button[aria-pressed="true"] {
+    background: var(--olive-dark);
+    color: #f6f3ec;
+  }
+
+  body #basemap-switch.lume-basemap-switch .basemap-options button:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 2px;
+  }
+
+  /* Drawers start below the two rows and end above the footer. */
+  body .lume-weather-drawer,
+  body .telemetry-stack,
+  body.lume-map-unavailable .telemetry-stack {
+    top: calc(var(--lume-safe-top) + 98px);
+    left: var(--lume-safe-left);
+    right: var(--lume-safe-right);
+    bottom: calc(var(--lume-safe-bottom) + 88px);
+    width: auto;
+  }
+
+  body.weather-is-open .lume-map-status,
+  body .lume-map-status {
+    top: auto;
+    left: var(--lume-safe-left);
+    right: var(--lume-safe-right);
+    bottom: calc(var(--lume-safe-bottom) + 88px);
+    max-width: none;
+  }
+
+  /* Footer: one row, bottom-left, above the attribution strip. It leaves a
+     60px column on the right for the zoom and basemap controls. */
+  body .utility-bar {
+    left: var(--lume-safe-left);
+    right: auto;
+    bottom: calc(var(--lume-safe-bottom) + 34px);
+    max-width: calc(100% - var(--lume-safe-left) - var(--lume-safe-right) - 60px);
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 2px;
+    padding: 1px 4px;
+    border-radius: 14px;
+  }
+  body .utility-bar > :not(#lume-reopen-intro):not(#lume-info-open) {
+    display: none;
+  }
+  body .utility-bar #lume-reopen-intro,
+  body .utility-bar #lume-info-open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--olive-accent);
+    font: 600 .76rem/1.15 "Lume Plex", system-ui, sans-serif;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  body .utility-bar #lume-info-open {
+    border-left: 1px solid var(--card-border);
+    border-radius: 0 10px 10px 0;
+  }
+  body .utility-bar #lume-info-open:focus-visible,
+  body .utility-bar #lume-reopen-intro:focus-visible {
+    outline: 3px solid #327b9a;
+    outline-offset: 2px;
+  }
+
+  body .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
+    pointer-events: auto;
+    margin: 0 12px 10px 0;
+    float: none;
+  }
+  .maplibregl-ctrl-attrib {
+    pointer-events: auto;
+    margin: 0 10px 0 0;
+    float: none;
+    max-width: calc(100vw - 24px);
+    font-size: 10px;
+    line-height: 1.3;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   body .lume-floating-brand, body .lume-floating-brand h1,
   body .lume-floating-brand .brand-dot { animation: none !important; }
@@ -347,6 +718,25 @@ body.lume-opening-active .maplibregl-control-container {
 
 .lume-opening-headline span {
   display: block;
+}
+
+.lume-opening-headline span:first-child {
+  display: inline-block;
+  will-change: transform, color, text-shadow;
+  animation: lume-dresden-living 6s ease-in-out infinite;
+}
+
+@keyframes lume-dresden-living {
+  0%, 100% {
+    transform: translateY(0);
+    color: #f6f3ec;
+    text-shadow: 0 0 0 rgba(112, 255, 229, 0);
+  }
+  50% {
+    transform: translateY(-2px);
+    color: #ffffff;
+    text-shadow: 0 0 16px rgba(112, 255, 229, 0.24);
+  }
 }
 
 .lume-opening-sub {
@@ -522,8 +912,17 @@ body.lume-opening-active .maplibregl-control-container {
   .lume-opening {
     padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   }
+  .lume-opening-top {
+    justify-content: center;
+    text-align: center;
+  }
+  .lume-opening-brand {
+    justify-content: center;
+  }
   .lume-opening-brand-sub {
-    display: none;
+    display: inline;
+    font-size: 0.74rem;
+    opacity: 0.75;
   }
   .lume-opening-center {
     padding: 18px 0 24px;
@@ -555,10 +954,13 @@ body.lume-opening-active .maplibregl-control-container {
 @media (prefers-reduced-motion: reduce) {
   .lume-opening,
   .lume-opening-headline,
+  .lume-opening-headline span:first-child,
   .lume-opening-sub,
   .lume-opening-cue-icon,
   .lume-opening-motif .motif-axis {
     animation: none !important;
     transition: none !important;
+    transform: none !important;
+    text-shadow: none !important;
   }
 }

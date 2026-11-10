@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Lume Dresden · Baustellen, Wetterwarnungen &amp; Elbe-Pegel</title>
 
   <link rel="preload" href="/lume-fonts/ibm-plex-sans-variable.woff2" as="font" type="font/woff2" crossorigin>
@@ -593,14 +593,23 @@
     </div>
   </header>
 
-  <button type="button" id="sidebar-toggle" class="lume-map-button" aria-controls="lume-sidebar" aria-expanded="true">
+  <button type="button" id="sidebar-toggle" class="lume-map-button" aria-controls="lume-sidebar" aria-expanded="true" aria-label="Suche und Umgebung einklappen">
     <span aria-hidden="true">☰</span>
-    <span>Suche &amp; Umgebung</span>
+    <span>Suche</span>
   </button>
 
   <div id="basemap-switch" class="lume-basemap-switch" role="group" aria-label="Kartenansicht" hidden>
-    <button type="button" data-basemap="street" aria-pressed="true">Karte</button>
-    <button type="button" data-basemap="aerial" aria-pressed="false">Luftbild</button>
+    <button type="button" id="basemap-mobile-toggle" class="basemap-mobile-toggle" aria-expanded="false" aria-haspopup="true" aria-label="Kartenansicht wählen: Karte" title="Kartenansicht wählen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+        <polyline points="2 17 12 22 22 17"/>
+        <polyline points="2 12 12 17 22 12"/>
+      </svg>
+    </button>
+    <div class="basemap-options">
+      <button type="button" data-basemap="street" aria-pressed="true">Karte</button>
+      <button type="button" data-basemap="aerial" aria-pressed="false">Luftbild</button>
+    </div>
   </div>
 
   <p id="basemap-status" class="lume-map-status" role="status" hidden></p>
@@ -4277,7 +4286,7 @@
 
         return {
           top: Math.min(
-            compact.matches ? 150 : 100,
+            compact.matches ? 124 : 100,
             Math.max(20, height / 3)
           ),
           bottom: Math.min(90, Math.max(20, height / 5)),
@@ -4297,10 +4306,13 @@
       });
 
       document.addEventListener("keydown", event => {
+        // An open native dialog or mobile menu consumes Escape first; keep the sidebar open.
         if (
           event.key === "Escape" &&
           isOpen &&
-          !window.lumeChoosingMapPoint
+          !window.lumeChoosingMapPoint &&
+          !document.querySelector("dialog[open]") &&
+          !document.getElementById("basemap-switch")?.classList.contains("is-open")
         ) {
           window.lumeSetSidebarOpen(false);
         }
@@ -4319,7 +4331,55 @@
 
       switches.hidden = false;
 
-      const buttons = [...switches.querySelectorAll("button")];
+      const buttons = [...switches.querySelectorAll("button[data-basemap]")];
+      const mobileToggle = document.getElementById("basemap-mobile-toggle");
+
+      const originalParent = switches.parentElement;
+      const originalNextSibling = switches.nextSibling;
+
+      function syncBasemapPlacement() {
+        const ctrl = document.querySelector(".maplibregl-ctrl-bottom-right");
+        const zoom = ctrl?.querySelector(".maplibregl-ctrl-group");
+        if (!ctrl || !zoom) return;
+        if (compact.matches) {
+          if (switches.parentElement !== ctrl) {
+            ctrl.insertBefore(switches, zoom);
+          }
+        } else {
+          if (switches.parentElement !== originalParent) {
+            originalParent.insertBefore(switches, originalNextSibling);
+          }
+        }
+      }
+      compact.addEventListener("change", syncBasemapPlacement);
+      syncBasemapPlacement();
+
+      function setMobileMenuOpen(open) {
+        if (!mobileToggle) return;
+        switches.classList.toggle("is-open", open);
+        mobileToggle.setAttribute("aria-expanded", String(open));
+      }
+
+      if (mobileToggle) {
+        mobileToggle.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = switches.classList.contains("is-open");
+          setMobileMenuOpen(!isOpen);
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!switches.contains(e.target)) {
+            setMobileMenuOpen(false);
+          }
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && switches.classList.contains("is-open")) {
+            setMobileMenuOpen(false);
+            mobileToggle.focus();
+          }
+        });
+      }
       const sourceId = "lume-geosn-aerial";
       const layerId = "lume-geosn-aerial-layer";
 
@@ -4339,6 +4399,12 @@
           button.setAttribute(
             "aria-pressed",
             String((button.dataset.basemap === "aerial") === aerial)
+          );
+        }
+        if (mobileToggle) {
+          mobileToggle.setAttribute(
+            "aria-label",
+            "Kartenansicht wählen: " + (aerial ? "Luftbild" : "Karte")
           );
         }
       }
@@ -4460,6 +4526,10 @@
             streetMode();
           } else {
             aerialMode();
+          }
+          setMobileMenuOpen(false);
+          if (mobileToggle && window.matchMedia("(max-width: 760px)").matches) {
+            mobileToggle.focus();
           }
         });
       }
@@ -5135,6 +5205,81 @@
     })();
   </script>
 
+  <script id="lume-info-dialog">
+    // Compact phones show only "Startansicht" and "Info & Rechtliches" in the
+    // footer (see lume-identity.css). "Info & Rechtliches" reuses the native
+    // #lume-source-dialog, which supplies focus handling and Escape. Desktop
+    // keeps the full footer, and "Quellen & Hinweise *" opens the unchanged dialog.
+    (() => {
+      const footer = document.querySelector(".utility-bar");
+      const dialog = document.getElementById("lume-source-dialog");
+      const heading = dialog?.querySelector(".source-dialog-heading");
+      const title = document.getElementById("lume-source-title");
+      if (!footer || !dialog || !heading || !title) return;
+
+      const sourcesTitle = title.textContent;
+      const infoClass = "lume-source-dialog--info";
+
+      const more = document.createElement("nav");
+      more.className = "source-dialog-more";
+      more.setAttribute("aria-labelledby", "lume-source-more-title");
+      const moreTitle = document.createElement("h3");
+      moreTitle.id = "lume-source-more-title";
+      moreTitle.textContent = "Projekt & Rechtliches";
+      const list = document.createElement("ul");
+
+      // Clone the footer links so destinations, targets and rel stay identical.
+      for (const link of footer.querySelectorAll(":scope > a[href]")) {
+        const item = document.createElement("li");
+        item.append(link.cloneNode(true));
+        list.append(item);
+      }
+
+      // lume-pwa.js (deferred) owns #lume-install and its install logic.
+      // This ID-less proxy forwards to it; no duplicate ID or observer is needed.
+      const installItem = document.createElement("li");
+      installItem.hidden = true;
+      const install = document.createElement("button");
+      install.type = "button";
+      install.className = "source-dialog-install";
+      install.textContent = "App installieren";
+      install.addEventListener("click", () => {
+        document.getElementById("lume-install")?.click();
+      });
+      installItem.append(install);
+      list.append(installItem);
+      document.addEventListener("DOMContentLoaded", () => {
+        installItem.hidden = !document.getElementById("lume-install");
+      }, { once: true });
+
+      more.append(moreTitle, list);
+      const sourcesHeading = document.createElement("h3");
+      sourcesHeading.className = "source-dialog-more";
+      sourcesHeading.textContent = sourcesTitle;
+      heading.after(more, sourcesHeading);
+
+      const trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.id = "lume-info-open";
+      trigger.textContent = "Info & Rechtliches";
+      trigger.setAttribute("aria-haspopup", "dialog");
+      trigger.addEventListener("click", () => {
+        if (dialog.open) return;
+        dialog.classList.add(infoClass);
+        title.textContent = "Info & Rechtliches";
+        dialog.showModal();
+      });
+
+      dialog.addEventListener("close", () => {
+        dialog.classList.remove(infoClass);
+        title.textContent = sourcesTitle;
+      });
+
+      (document.getElementById("lume-source-open") || footer.firstChild)
+        ?.after(trigger);
+    })();
+  </script>
+
 
   <style id="lume-final-layout-order-style">
     .lume-weather-drawer .weather-widget {
@@ -5168,7 +5313,7 @@
     (() => {
       const toggle = document.getElementById("sidebar-toggle");
       const label = toggle?.querySelector("span:last-child");
-      if (label) label.textContent = "Suche & Umgebung";
+      if (label) label.textContent = "Suche";
 
       const sidebar = document.getElementById("lume-sidebar");
       const title = sidebar?.querySelector(".sidebar-heading strong");
@@ -5250,7 +5395,7 @@
       font-weight: 700;
     }
   </style>
-  <link rel="stylesheet" href="/lume-identity.css?v=20261109">
+  <link rel="stylesheet" href="/lume-identity.css?v=20261110">
 
   <script id="lume-dwd">
     (() => {
@@ -5646,14 +5791,29 @@
         }
       }
 
+      // Settle threshold and idle timings so partial gestures never leave the UI half-open.
+      // Wheel uses a short 180 ms pause; keyboard ArrowUp/ArrowDown uses a 900 ms pause
+      // so deliberate multi-key stepping or reversing (> 500 ms OS repeat delay) is not interrupted.
+      const SETTLE_THRESHOLD = 0.45;
+      const WHEEL_IDLE_SETTLE_MS = 180;
+      const KEYBOARD_IDLE_SETTLE_MS = 900;
+
       let isOpeningVisible = true;
       let progress = 0;
       let animFrame = null;
+      let idleSettleTimer = null;
       let touchStartY = null;
       let lastTouchY = null;
       let touchMoved = false;
 
       const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
+
+      function clearIdleSettleTimer() {
+        if (idleSettleTimer !== null) {
+          clearTimeout(idleSettleTimer);
+          idleSettleTimer = null;
+        }
+      }
 
       function applyProgress(nextValue) {
         progress = clamp(nextValue, 0, 1);
@@ -5706,10 +5866,27 @@
       }
 
       function cancelProgressAnimation() {
+        clearIdleSettleTimer();
         if (animFrame !== null && typeof cancelAnimationFrame === "function") {
           cancelAnimationFrame(animFrame);
         }
         animFrame = null;
+      }
+
+      function settleFromCurrentProgress() {
+        clearIdleSettleTimer();
+        if (!isOpeningVisible || progress <= 0 || progress >= 1) return;
+        if (progress >= SETTLE_THRESHOLD) {
+          animateProgressTo(1, "map", { updateUrl: true });
+        } else {
+          animateProgressTo(0, "map", { updateUrl: false });
+        }
+      }
+
+      function scheduleIdleSettle(delayMs = WHEEL_IDLE_SETTLE_MS) {
+        clearIdleSettleTimer();
+        if (!isOpeningVisible || progress <= 0 || progress >= 1) return;
+        idleSettleTimer = setTimeout(settleFromCurrentProgress, delayMs);
       }
 
       function focusAfterEntry(mode) {
@@ -5810,11 +5987,11 @@
         animateProgressTo(1, mode, { updateUrl });
       }
 
-      function showOpening({ updateUrl = true } = {}) {
+      function showOpening({ updateUrl = true, immediate = false } = {}) {
         cancelProgressAnimation();
+        const wasDismissed = !isOpeningVisible;
         isOpeningVisible = true;
         syncDirectLinks();
-        applyProgress(0);
         opening.hidden = false;
         opening.inert = false;
         document.body.classList.add("lume-opening-active");
@@ -5822,6 +5999,15 @@
 
         if (updateUrl && window.history?.replaceState) {
           window.history.replaceState(null, "", buildUrlWithView(null));
+        }
+
+        if (immediate || reduceMotionQuery.matches) {
+          applyProgress(0);
+        } else {
+          if (wasDismissed || progress >= 0.995) {
+            applyProgress(1);
+          }
+          animateProgressTo(0, "map", { updateUrl: false });
         }
 
         if (scrollCue) {
@@ -5881,46 +6067,44 @@
         deltaPx = clamp(deltaPx, -140, 140);
 
         stepGestureProgress(deltaPx / SCROLL_DISTANCE_PX);
+        scheduleIdleSettle(WHEEL_IDLE_SETTLE_MS);
       }, { passive: false });
 
       // Progressive upward touch swipe reveal: swiping up reveals; swiping down reverses before completion.
+      // A non-moving tap does not cancel an in-flight settle or Startansicht reopen animation.
       const SWIPE_DISTANCE_PX = 260;
       opening.addEventListener("touchstart", event => {
         if (!isOpeningVisible || event.touches.length !== 1) return;
         touchStartY = event.touches[0].clientY;
         lastTouchY = touchStartY;
         touchMoved = false;
-        cancelProgressAnimation();
       }, { passive: true });
 
       opening.addEventListener("touchmove", event => {
         if (!isOpeningVisible || lastTouchY === null || event.touches.length !== 1) return;
+        const currentY = event.touches[0].clientY;
+        if (!touchMoved) {
+          if (Math.abs(currentY - touchStartY) <= 4) {
+            return;
+          }
+          touchMoved = true;
+        }
         event.preventDefault();
         event.stopPropagation();
 
-        const currentY = event.touches[0].clientY;
         const dy = lastTouchY - currentY;
         lastTouchY = currentY;
-        if (Math.abs(currentY - touchStartY) > 4) {
-          touchMoved = true;
-        }
         stepGestureProgress(dy / SWIPE_DISTANCE_PX);
       }, { passive: false });
 
       const finishTouch = () => {
-        if (!isOpeningVisible || !touchMoved) {
-          touchStartY = null;
-          lastTouchY = null;
-          touchMoved = false;
-          return;
-        }
+        const hadMove = touchMoved;
         touchStartY = null;
         lastTouchY = null;
         touchMoved = false;
-        if (progress >= 0.72) {
-          animateProgressTo(1, "map", { updateUrl: true });
-        } else if (progress > 0 && progress < 0.22) {
-          animateProgressTo(0, "map", { updateUrl: false });
+        if (!isOpeningVisible) return;
+        if (hadMove || (animFrame === null && progress > 0 && progress < 1)) {
+          settleFromCurrentProgress();
         }
       };
 
@@ -5935,9 +6119,11 @@
         } else if (event.key === "ArrowDown") {
           event.preventDefault();
           stepGestureProgress(0.25);
+          scheduleIdleSettle(KEYBOARD_IDLE_SETTLE_MS);
         } else if (event.key === "ArrowUp" && progress > 0) {
           event.preventDefault();
           stepGestureProgress(-0.25);
+          scheduleIdleSettle(KEYBOARD_IDLE_SETTLE_MS);
         }
       });
 
