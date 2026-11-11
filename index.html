@@ -1402,8 +1402,7 @@
             "Status laut veröffentlichtem Zeitraum; " +
             "keine Bestätigung der tatsächlichen Verkehrslage."
           ].filter(line => line !== null && line !== undefined).join("\n"),
-          labels[(retrievalFailed || window.lumeCitySnapshotStale(snapshot))
-            ? "unknown" : p.schedule_status] || "GEMELDET"
+          labels[p.schedule_status] || "GEMELDET"
         );
       }
 
@@ -1486,7 +1485,7 @@
                 ...feature.properties,
                 lume_feature_key: String(feature.id),
                 restriction_category: classify(feature).id,
-                schedule_status: stale ? "unknown" : feature.properties.schedule_status
+                schedule_status: feature.properties.schedule_status
               }
             }))
           });
