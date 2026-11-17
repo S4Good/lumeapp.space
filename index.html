@@ -2578,6 +2578,7 @@
 
       let choosing = false;
       let selected = null;
+      let selectedLabel = "";
       let marker = null;
       let controller = null;
       let version = 0;
@@ -2618,6 +2619,7 @@
           window.lumeClearRoadworkSelection();
         }
         selected = { lat, lon };
+        selectedLabel = label || "Gewählter Ort";
         latestNearbyData = null;
         resetBriefing();
         setChoosing(false);
@@ -2659,6 +2661,7 @@
         if (controller) controller.abort();
 
         selected = null;
+        selectedLabel = "";
         latestNearbyData = null;
         clearInterval(nearbyAgeTimer);
         resetBriefing();
@@ -2844,7 +2847,192 @@
         return node;
       }
 
-      function renderBriefing(data, filterAtCreation) {
+      let prototypeCardCounter = 0;
+
+      function formatProtoDate(dateStr) {
+        if (!dateStr) return null;
+        const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        return m ? `${m[3]}.${m[2]}.${m[1]}` : String(dateStr);
+      }
+
+      function formatProtoBerlinDateTime(isoStr) {
+        if (!isoStr) return "unbekannt";
+        const d = new Date(isoStr);
+        if (Number.isNaN(d.getTime())) return String(isoStr);
+        return new Intl.DateTimeFormat("de-DE", {
+          timeZone: "Europe/Berlin",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZoneName: "short"
+        }).format(d);
+      }
+
+      function formatProtoDateOrDateTime(isoStr, fallbackDateStr, precision) {
+        if (precision === "explicit_datetime" && isoStr) {
+          const d = new Date(isoStr);
+          if (!Number.isNaN(d.getTime())) {
+            return formatProtoBerlinDateTime(isoStr);
+          }
+        }
+        return formatProtoDate(fallbackDateStr);
+      }
+
+      function getProtoCategoryMeta(cat) {
+        if (cat === "full_closure") {
+          return { icon: "⛔", shortLabel: "Vollsperrung", cls: "sev-full" };
+        }
+        if (cat === "lane_closure") {
+          return { icon: "🚧", shortLabel: "Fahrstreifensperrung", cls: "sev-lane" };
+        }
+        if (cat === "major_restriction") {
+          return { icon: "⚠️", shortLabel: "Erhebliche Einschränkung", cls: "sev-major" };
+        }
+        return { icon: "ℹ️", shortLabel: "Einschränkung (Schweregrad unbestimmt)", cls: "sev-unknown" };
+      }
+
+      function buildProtoScheduleText(item, shortLabel) {
+        const prec = item.schedule_precision || "date_only";
+        const startFmt = formatProtoDateOrDateTime(item.starts_at, item.starts_on, prec);
+        const endFmt = formatProtoDateOrDateTime(item.ends_at, item.ends_on, prec);
+
+        if (item.schedule_status === "active") {
+          return endFmt
+            ? `${shortLabel} geplant bis ${endFmt}`
+            : `${shortLabel} gemeldet · Enddatum unklar`;
+        }
+        if (item.schedule_status === "upcoming") {
+          return startFmt
+            ? `${shortLabel} geplant ab ${startFmt}`
+            : `${shortLabel} bevorstehend · Startdatum unklar`;
+        }
+        if (item.schedule_status === "ended") {
+          return `${shortLabel} · Veröffentlichter Zeitraum beendet`;
+        }
+        return `${shortLabel} gemeldet · Zeitraum unklar`;
+      }
+
+      function buildProtoIntervalText(item) {
+        const prec = item.schedule_precision || "date_only";
+        const startFmt = formatProtoDateOrDateTime(item.starts_at, item.starts_on, prec);
+        const endFmt = formatProtoDateOrDateTime(item.ends_at, item.ends_on, prec);
+        if (startFmt && endFmt) return `${startFmt} bis ${endFmt}`;
+        if (startFmt) return `ab ${startFmt} (Ende nicht angegeben)`;
+        if (endFmt) return `bis ${endFmt} (Beginn nicht angegeben)`;
+        return "Nicht angegeben";
+      }
+
+      function renderPrototypeRoadCard(item, protoData) {
+        prototypeCardCounter += 1;
+        const detailsId = `proto-card-details-${prototypeCardCounter}`;
+        const meta = getProtoCategoryMeta(item.severity_category);
+        const isEnded = item.schedule_status === "ended";
+
+        const card = document.createElement("article");
+        card.className = `proto-compact-card ${meta.cls}${isEnded ? " is-ended" : ""}`;
+
+        const streetRow = document.createElement("div");
+        streetRow.className = "proto-card-street-row";
+        const iconEl = document.createElement("span");
+        iconEl.className = "proto-card-icon";
+        iconEl.setAttribute("aria-hidden", "true");
+        iconEl.textContent = meta.icon;
+        const streetEl = document.createElement("strong");
+        streetEl.className = "proto-card-street";
+        streetEl.textContent = item.street || "Straßenabschnitt";
+        streetRow.append(iconEl, streetEl);
+
+        const summaryEl = document.createElement("p");
+        summaryEl.className = "proto-card-summary";
+        summaryEl.textContent = buildProtoScheduleText(item, meta.shortLabel);
+
+        const footerEl = document.createElement("div");
+        footerEl.className = "proto-card-footer";
+        const distEl = document.createElement("span");
+        distEl.className = "proto-card-dist";
+        distEl.textContent = `${item.distance_m} m`;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "proto-btn-details";
+        btn.setAttribute("aria-expanded", "false");
+        btn.setAttribute("aria-controls", detailsId);
+        btn.textContent = "Details";
+        footerEl.append(distEl, btn);
+
+        const detailsEl = document.createElement("div");
+        detailsEl.className = "proto-card-details";
+        detailsEl.id = detailsId;
+        detailsEl.hidden = true;
+
+        const addDetailRow = (labelText, valueNodeOrText) => {
+          const row = document.createElement("div");
+          row.className = "proto-detail-row";
+          const lbl = document.createElement("span");
+          lbl.className = "proto-detail-label";
+          lbl.textContent = labelText;
+          const val = document.createElement("span");
+          val.className = "proto-detail-val";
+          if (typeof valueNodeOrText === "string") {
+            val.textContent = valueNodeOrText;
+          } else {
+            val.append(valueNodeOrText);
+          }
+          row.append(lbl, val);
+          detailsEl.append(row);
+        };
+
+        addDetailRow("Zeitraum:", buildProtoIntervalText(item));
+        addDetailRow("Anlass (Quelle):", item.reason || "Keine Angabe in der Quelle");
+
+        const sourceName = item.source_name || protoData.source || "Landeshauptstadt Dresden, Straßen- und Tiefbauamt";
+        const sourceUrl = item.source_url || protoData.source_url;
+        if (sourceUrl) {
+          const link = document.createElement("a");
+          link.href = sourceUrl;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = sourceName;
+          addDetailRow("Quelle:", link);
+        } else {
+          addDetailRow("Quelle:", sourceName);
+        }
+
+        const validFmt = formatProtoDate(protoData.source_valid_on) || "unbekannt";
+        const capturedFmt = formatProtoBerlinDateTime(protoData.captured_at || protoData.response_generated_at);
+        const updatedFmt = item.source_updated_on ? formatProtoDate(item.source_updated_on) : null;
+        addDetailRow(
+          "Datenstand:",
+          `Gültig am ${validFmt} · Erfasst: ${capturedFmt}${updatedFmt ? ` · Geändert: ${updatedFmt}` : ""}`
+        );
+
+        if (item.selection_reason) {
+          addDetailRow("Auswahlgrund:", item.selection_reason);
+        }
+
+        const techEl = document.createElement("p");
+        techEl.className = "proto-detail-tech";
+        techEl.textContent =
+          "Entfernung zur gemeldeten Straßenachse · Veröffentlichte Zeiträume bestätigen keine Lage vor Ort." +
+          (item.restriction_type ? ` Original-Einstufung: ${item.restriction_type}.` : "") +
+          (item.segment_count ? ` Abschnitte: ${item.segment_count}.` : "") +
+          (item.source_id ? ` ID: ${item.source_id}` : "");
+        detailsEl.append(techEl);
+
+        btn.addEventListener("click", () => {
+          const expanded = btn.getAttribute("aria-expanded") === "true";
+          btn.setAttribute("aria-expanded", String(!expanded));
+          btn.textContent = expanded ? "Details" : "Weniger";
+          detailsEl.hidden = expanded;
+        });
+
+        card.append(streetRow, summaryEl, footerEl, detailsEl);
+        return card;
+      }
+
+      function renderBriefing(data, filterAtCreation, locationLabelText) {
         clearInterval(briefingAgeTimer);
         const activeFilter =
           filterAtCreation || window.lumeRestrictions.getActiveFilter();
@@ -2890,79 +3078,122 @@
         briefingNode("h3", "Mein Lume-Briefing", briefingOutput);
         briefingNode(
           "p",
-          "Erstellt: " + formatTime(data.generated_at) +
-          " · Zeiten: Europe/Berlin. Status bei Erstellung; " +
-          "keine automatische Aktualisierung.",
+          `Ort: ${locationLabelText || "Gewählter Ort"} · Umkreis: ${data.radius_m} m · Erstellt: ` +
+          formatTime(data.generated_at) +
+          " · Zeiten: Europe/Berlin.",
           briefingOutput
         ).className = "nearby-note";
 
+        const ro = data.resident_overview;
         const roadSource = data.sources.find(item => item.id === "roadworks");
-        const roadState = () => data.data_status.roadworks === "unavailable"
-          ? "unavailable" : window.lumeCitySnapshotStale({
+        const roadState = () => (
+          ro.dataset_status === "unavailable" || data.data_status.roadworks === "unavailable"
+        ) ? "unavailable" : (
+          ro.dataset_status === "stale" ||
+          data.data_status.roadworks === "stale" ||
+          window.lumeCitySnapshotStale({
             status: data.data_status.roadworks,
-            source_valid_on: roadSource?.source_valid_on,
-            snapshot_fetched_at: roadSource?.fetched_at
-          }) ? "stale" : "ok";
+            source_valid_on: ro.source_valid_on || roadSource?.source_valid_on,
+            snapshot_fetched_at: ro.captured_at || roadSource?.fetched_at
+          })
+        ) ? "stale" : "ok";
+
         const roads = part("Lage in deiner Nähe", roadState());
         const roadStatusLine = roads.querySelector("p");
-        briefingNode(
-          "p",
-          "Filter bei Erstellung: " + activeFilter.label,
-          roads
-        ).className = "briefing-source";
-        const roadSummaryLine = briefingNode("p", "", roads);
-        let emptyRoadLine = null;
 
-        const bySourceId = new Map();
-        for (const rawItem of data.events) {
-          rawItem.restriction_type ??= rawItem.type;
-          const existing = bySourceId.get(rawItem.source_id);
-          if (!existing || rawItem.distance_m < existing.distance_m) {
-            bySourceId.set(rawItem.source_id, rawItem);
-          }
-        }
-        const uniqueEvents = [...bySourceId.values()];
-        const matchingEvents = uniqueEvents.filter(item =>
-          window.lumeRestrictions.matches(item, activeFilter.id)
-        );
+        const staleWarnBanner = document.createElement("p");
+        staleWarnBanner.className = "proto-stale-warning";
+        staleWarnBanner.hidden = true;
+        roads.append(staleWarnBanner);
 
-        if (data.data_status.roadworks !== "unavailable") {
-          const nearest = matchingEvents.reduce(
-            (best, item) =>
-              !best || item.distance_m < best.distance_m ? item : best,
-            null
-          );
+        if (roadState() === "unavailable") {
+          const unavail = document.createElement("p");
+          unavail.className = "proto-empty-notice";
+          unavail.textContent =
+            "Die Baustellen-Datenquelle ist derzeit nicht verfügbar. " +
+            "Es lassen sich keine Aussagen über Einschränkungen vor Ort treffen.";
+          roads.append(unavail);
+        } else {
+          const counts = ro.group_counts;
 
-          if (nearest) {
-            const badgeRow = document.createElement("div");
-            badgeRow.className = "nearby-item-header";
-            badgeRow.append(window.lumeRestrictions.createBadge(nearest));
-            roads.append(badgeRow);
+          const countsRow = document.createElement("div");
+          countsRow.className = "proto-counts-row";
+          countsRow.setAttribute("aria-label", "Übersicht der Meldungsgruppen");
+          const addCountPill = (text, extraClass) => {
+            const pill = document.createElement("span");
+            pill.className = "proto-count-pill" + (extraClass ? " " + extraClass : "");
+            pill.textContent = text;
+            countsRow.append(pill);
+          };
+          addCountPill(`Im Zeitraum: ${counts.within_schedule_total}`);
+          addCountPill(`Zeitraum unklar: ${counts.schedule_uncertain}`, "warn");
+          addCountPill(`Bevorstehend: ${counts.upcoming}`);
+          addCountPill(`Beendet: ${counts.period_ended}`, "neutral");
+          roads.append(countsRow);
 
-            briefingNode(
-              "strong",
-              "Nächstgelegener Eintrag: " +
-              (nearest.street || "Straßenabschnitt"),
-              roads
-            );
-            briefingNode(
-              "p",
-              (nearest.restriction_type || "Art nicht angegeben") +
-              " · " + nearest.distance_m +
-              " m Luftlinie zum Abschnitt",
-              roads
-            );
-            briefingNode(
-              "p",
-              "Veröffentlichter Zeitraum: " +
-              date(nearest.starts_on) + " bis " + date(nearest.ends_on),
-              roads
-            );
-            if (nearest.reason) {
-              briefingNode("p", nearest.reason.trim(), roads);
-            }
+          // Section 1: In deiner Nähe (up to 3 nearest within-schedule)
+          const sec1Heading = document.createElement("h5");
+          sec1Heading.className = "proto-section-heading";
+          sec1Heading.textContent = "In deiner Nähe";
+          roads.append(sec1Heading);
+
+          const list1 = document.createElement("div");
+          list1.className = "proto-card-list";
+          if (!ro.nearby_records || ro.nearby_records.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "proto-empty-notice";
+            empty.textContent =
+              "Im veröffentlichten Zeitraum liegen derzeit keine Meldungen im Umkreis vor. " +
+              "Dies bestätigt keine freien Straßen vor Ort.";
+            list1.append(empty);
           } else {
-            emptyRoadLine = briefingNode("p", "", roads);
+            for (const item of ro.nearby_records) {
+              list1.append(renderPrototypeRoadCard(item, ro));
+            }
+          }
+          roads.append(list1);
+
+          // Section 2: Weitere Vollsperrungen im Umkreis (omitted if empty)
+          if (ro.additional_full_closures && ro.additional_full_closures.length > 0) {
+            const sec2Heading = document.createElement("h5");
+            sec2Heading.className = "proto-section-heading";
+            sec2Heading.textContent = "Weitere Vollsperrungen im Umkreis";
+            roads.append(sec2Heading);
+
+            const list2 = document.createElement("div");
+            list2.className = "proto-card-list";
+            for (const item of ro.additional_full_closures) {
+              list2.append(renderPrototypeRoadCard(item, ro));
+            }
+            roads.append(list2);
+          }
+
+          const addCollapsedGroup = (titleText, items, isWarn) => {
+            if (!items || !items.length) return;
+            const det = document.createElement("details");
+            det.className = "proto-disclosure" + (isWarn ? " proto-disclosure-warn" : "");
+            const sum = document.createElement("summary");
+            sum.textContent = `${titleText} (${items.length})`;
+            det.append(sum);
+            const list = document.createElement("div");
+            list.className = "proto-card-list";
+            for (const item of items) {
+              list.append(renderPrototypeRoadCard(item, ro));
+            }
+            det.append(list);
+            roads.append(det);
+          };
+
+          addCollapsedGroup("Meldungen mit unklarem Zeitraum", ro.uncertain_schedule_records, true);
+          addCollapsedGroup("Weitere Meldungen im veröffentlichten Zeitraum", ro.remaining_within_schedule, false);
+          addCollapsedGroup("Bevorstehende Meldungen", ro.upcoming_records, false);
+          addCollapsedGroup("Bereits beendete Zeiträume", ro.ended_records, false);
+
+          if (ro.truncation_disclosure) {
+            const truncEl = document.createElement("p");
+            truncEl.className = "briefing-source";
+            truncEl.textContent = ro.truncation_disclosure;
+            roads.append(truncEl);
           }
         }
 
@@ -2970,25 +3201,15 @@
         const updateRoadAge = () => {
           const status = roadState();
           roadStatusLine.textContent = "Datenstatus: " + labels[status];
-          roadSummaryLine.textContent = status === "stale"
-            ? "Datenbestand veraltet – aktuelle Einschränkungen im Umkreis sind unklar. " +
-            (matchingEvents.length
-              ? "Die folgenden Einträge zeigen den letzten Datenstand (" +
-              activeFilter.shortLabel + ": " + matchingEvents.length + ")."
-              : "Für „" + activeFilter.shortLabel +
-              "“ folgt daraus keine aktuelle Entwarnung.")
-            : activeFilter.id === "all"
-              ? data.summary.text
-              : matchingEvents.length + " von " + uniqueEvents.length +
-              " gemeldeten Einschränkungen im Umkreis von " + data.radius_m +
-              " m entsprechen dem Filter „" + activeFilter.shortLabel + "“.";
-          if (emptyRoadLine) emptyRoadLine.textContent = status === "stale"
-            ? "Datenbestand veraltet: Für „" + activeFilter.shortLabel +
-            "“ lässt sich keine aktuelle Aussage oder Entwarnung ableiten."
-            : activeFilter.id === "all"
-              ? "Keine passenden Einträge im geladenen Datensatz. Das bestätigt keine störungsfreie Umgebung."
-              : "Keine passenden Einträge für „" + activeFilter.label +
-              "“ im geladenen Datensatz. Das bestätigt keine störungsfreie Umgebung.";
+          if (status === "stale") {
+            staleWarnBanner.textContent =
+              "⚠️ Veralteter Datenstand: Aktuelle Verhältnisse sind unbestätigt. " +
+              "Die Anzeige zeigt den letzten bekannten Veröffentlichungsstand.";
+            staleWarnBanner.hidden = false;
+          } else {
+            staleWarnBanner.hidden = true;
+            staleWarnBanner.textContent = "";
+          }
         };
         updateRoadAge();
         briefingAgeTimer = setInterval(updateRoadAge, 30000);
@@ -3131,12 +3352,21 @@
         ) {
           throw new Error("Die Wetterdaten sind ungültig.");
         }
+
+        if (
+          !data.resident_overview ||
+          !Array.isArray(data.resident_overview.nearby_records) ||
+          !data.resident_overview.group_counts
+        ) {
+          throw new Error("Die Baustellen-Übersicht ist ungültig.");
+        }
       }
 
       briefingButton.addEventListener("click", async () => {
         if (!selected) return;
 
         const location = { ...selected };
+        const locationLabelText = selectedLabel || "Gewählter Ort";
         const radiusValue = Number(radius.value);
         clearInterval(briefingAgeTimer);
         const requestVersion = ++briefingVersion;
@@ -3177,12 +3407,13 @@
           if (requestVersion !== briefingVersion) return;
 
           validateBriefing(data, location, radiusValue);
+
           const appliedFilter = window.lumeRestrictions.getActiveFilter();
-          renderBriefing(data, appliedFilter);
+          renderBriefing(data, appliedFilter, locationLabelText);
 
           briefingMessage.textContent =
-            "Briefing erstellt (" + appliedFilter.shortLabel +
-            "). Die Datenstände stehen bei den jeweiligen Quellen.";
+            "Briefing erstellt (" + locationLabelText + " · " + radiusValue +
+            " m). Die Datenstände stehen bei den jeweiligen Quellen.";
           briefingButton.textContent = "Briefing aktualisieren";
 
         } catch (error) {
@@ -4663,6 +4894,213 @@
 
     #briefing-output a {
       color: var(--olive-accent);
+    }
+
+    .proto-stale-warning {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-left: 4px solid #df9b00;
+      border-radius: 6px;
+      background: #fff3cd;
+      color: #664d03;
+      font-size: .8rem;
+      font-weight: 600;
+    }
+
+    .proto-stale-warning[hidden] {
+      display: none;
+    }
+
+    .proto-counts-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .proto-count-pill {
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #e4ece6;
+      color: #163024;
+      font-size: .72rem;
+      font-weight: 600;
+    }
+
+    .proto-count-pill.warn {
+      background: #fff3cd;
+      color: #664d03;
+    }
+
+    .proto-count-pill.neutral {
+      background: #ececec;
+      color: #333;
+    }
+
+    .proto-section-heading {
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-size: .78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #163024;
+    }
+
+    .proto-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .proto-empty-notice {
+      padding: 10px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: #faf9f6;
+      font-size: .82rem;
+    }
+
+    .proto-compact-card {
+      padding: 10px 12px;
+      border: 1px solid var(--card-border);
+      border-left-width: 4px;
+      border-radius: 8px;
+      background: #fcfbf9;
+    }
+
+    .proto-compact-card.sev-full { border-left-color: #b8332a; }
+    .proto-compact-card.sev-lane { border-left-color: #c25b3f; }
+    .proto-compact-card.sev-major { border-left-color: #9a6b16; }
+    .proto-compact-card.sev-unknown { border-left-color: #3d6352; }
+    .proto-compact-card.is-ended { border-left-color: #888; opacity: .85; }
+
+    .proto-card-street-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .proto-card-icon {
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .proto-card-street {
+      font-size: .92rem;
+      font-weight: 700;
+      color: #163024;
+      overflow-wrap: anywhere;
+    }
+
+    #briefing-output .proto-card-summary {
+      margin-top: 3px;
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    .proto-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .proto-card-dist {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .proto-btn-details {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 6px 12px;
+      border: 1px solid rgba(22, 48, 36, .25);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--olive-accent);
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .proto-btn-details:hover,
+    .proto-btn-details[aria-expanded="true"] {
+      background: #e4ece6;
+      color: #163024;
+    }
+
+    .proto-btn-details:focus-visible {
+      outline: 3px solid #327b9a;
+      outline-offset: 2px;
+    }
+
+    .proto-card-details {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(22, 48, 36, .1);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: .76rem;
+    }
+
+    .proto-card-details[hidden] {
+      display: none;
+    }
+
+    .proto-detail-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .proto-detail-label {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .proto-detail-val {
+      overflow-wrap: anywhere;
+    }
+
+    #briefing-output .proto-detail-tech {
+      margin-top: 4px;
+      padding-top: 5px;
+      border-top: 1px dashed rgba(22, 48, 36, .12);
+      font-size: .7rem;
+      color: var(--text-muted);
+      overflow-wrap: anywhere;
+    }
+
+    .proto-disclosure {
+      margin-top: 10px;
+      padding: 2px 10px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: #faf9f6;
+    }
+
+    .proto-disclosure-warn {
+      border-color: rgba(223, 155, 0, .55);
+      background: #fffbf0;
+    }
+
+    .proto-disclosure[open] {
+      padding-bottom: 10px;
+    }
+
+    #briefing-output .proto-disclosure summary {
+      padding: 8px 0;
+      font-size: .8rem;
+      color: var(--olive-accent);
+    }
+
+    #briefing-output .proto-disclosure-warn summary {
+      color: #664d03;
     }
   </style>
 
